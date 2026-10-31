@@ -7,6 +7,7 @@ and the results-file check. Exit status is 0 only when no gate reports FAIL.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -29,14 +30,17 @@ def run_gate(name: str, command: list[str]) -> Outcome:
     completed = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, check=False)
     output = (completed.stdout + completed.stderr).strip()
     lines = [line for line in output.splitlines() if line.strip()]
-    detail = lines[-1].strip() if lines else "(no output)"
+    detail = lines[-1].strip("= ") if lines else "(no output)"
+    coverage = re.search(r"Total coverage: [\d.]+%", output)
+    if coverage:
+        detail = f"{detail}; {coverage.group(0)}"
     status = "PASS" if completed.returncode == 0 else "FAIL"
     return Outcome(name, status, detail, output)
 
 
-def check_results_file() -> Outcome:
+def check_results_file(root: Path = ROOT) -> Outcome:
     """The results file is created in M8; once present it must be a JSON object."""
-    path = ROOT / "results" / "results.json"
+    path = root / "results" / "results.json"
     if not path.exists():
         return Outcome(
             "results schema", "N/A", "results/results.json is created in milestone M8", ""
