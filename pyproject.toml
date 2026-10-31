@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hushwave"
+version = "0.1.0"
+description = "HushWave: single-channel speech noise reduction built from scratch in the STFT domain (NIT Goa DSP mini project 6)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Kartikey Tiwari" }]
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "matplotlib>=3.8",
+    "soundfile>=0.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "hypothesis>=6.100",
+    "ruff>=0.5",
+    "mypy>=1.10",
+]
+metrics = [
+    "pesq",
+    "pystoi",
+    "noisereduce",
+]
+audio = [
+    "sounddevice",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+hushwave = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "slow: tests that take more than a few seconds",
+]
+
+[tool.coverage.run]
+source = ["hushwave"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "scripts", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM"]
+
+[tool.mypy]
+strict = true
+mypy_path = "src"
+files = ["src", "scripts", "tests"]
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = ["scipy.*", "soundfile", "sounddevice", "pesq", "pystoi", "noisereduce"]
+ignore_missing_imports = true

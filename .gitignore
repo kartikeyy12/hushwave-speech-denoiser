@@ -1,0 +1,41 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Tool caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+.coverage
+.coverage.*
+htmlcov/
+
+# Data and audio (large or licensed): only tiny license-clean samples live in examples/
+data/*
+!data/.gitkeep
+*.wav
+*.flac
+!examples/*.wav
+
+# Milestone zips delivered by the assistant
+hushwave_M*.zip
+
+# LaTeX / report build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
