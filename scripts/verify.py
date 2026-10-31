@@ -54,6 +54,22 @@ def check_results_file(root: Path = ROOT) -> Outcome:
     return Outcome("results schema", "PASS", f"{len(parsed)} top-level keys", "")
 
 
+def check_manifest(root: Path = ROOT) -> Outcome:
+    """results/split_manifest.json is written by `make data`; once present it must validate."""
+    from hushwave.dataset import read_manifest, validate_manifest
+
+    path = root / "results" / "split_manifest.json"
+    if not path.exists():
+        return Outcome("data manifest", "N/A", "created by `make data`", "")
+    try:
+        problems = validate_manifest(read_manifest(path))
+    except (OSError, ValueError) as error:
+        return Outcome("data manifest", "FAIL", f"cannot read manifest: {error}", "")
+    if problems:
+        return Outcome("data manifest", "FAIL", problems[0], "\n".join(problems))
+    return Outcome("data manifest", "PASS", "valid, speaker-disjoint split", "")
+
+
 def main() -> int:
     python = sys.executable
     outcomes = [
@@ -75,6 +91,7 @@ def main() -> int:
             ],
         ),
         check_results_file(),
+        check_manifest(),
     ]
 
     width = max(len(outcome.name) for outcome in outcomes)

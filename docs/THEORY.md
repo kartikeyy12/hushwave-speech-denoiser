@@ -99,9 +99,9 @@ Anti-aliasing in the live demo is done inside the microphone path, before our co
 
 ### 3.5 Signal acquisition and generation
 
-- **Clean speech:** LibriSpeech utterances (16 kHz source). Source URL, checksum and license are verified in M3 before use.
+- **Clean speech:** LibriSpeech dev-clean (OpenSLR SLR12, CC BY 4.0), 16 kHz mono, split by speaker into DEV and TEST with no speaker in both (`results/split_manifest.json`).
 - **Synthetic noise:** white, pink, 50 Hz hum with harmonics, babble from summed utterances, amplitude-modulated and transient noise, all from seeded generators.
-- **Real noise:** DEMAND (verify in M3) and our own fan and corridor recordings.
+- **Real noise:** DEMAND street-traffic, cafeteria and hallway recordings (channel 1) and our own fan and corridor recordings. Each noise recording is split by time: its first half is used on DEV and its second half on TEST, so no noise segment is shared between tuning and evaluation. See `docs/DATA_SOURCES.md` and `docs/RECORDING_PROTOCOL.md`.
 - **Mixing:** section 8.
 
 ## 4. Framing, windows and WOLA

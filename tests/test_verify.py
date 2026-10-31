@@ -89,3 +89,15 @@ def test_coverage_line_is_summarised() -> None:
 def test_main_lists_expected_gates(name: str) -> None:
     source = (ROOT / "scripts" / "verify.py").read_text(encoding="utf-8")
     assert name in source
+
+
+def test_manifest_gate_states(tmp_path: Path) -> None:
+    assert verify.check_manifest(tmp_path).status == "N/A"
+    (tmp_path / "results").mkdir()
+    target = tmp_path / "results" / "split_manifest.json"
+    target.write_text("{broken", encoding="utf-8")
+    assert verify.check_manifest(tmp_path).status == "FAIL"
+    target.write_text('{"schema_version": 1}', encoding="utf-8")
+    outcome = verify.check_manifest(tmp_path)
+    assert outcome.status == "FAIL"
+    assert outcome.log != ""

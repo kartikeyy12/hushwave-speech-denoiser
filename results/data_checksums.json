@@ -1,0 +1,26 @@
+{
+  "OHALLWAY_16k.zip": {
+    "bytes": 77941854,
+    "md5": "fe918bbb0e63e73d09ba7f4843ef33f1",
+    "sha256": "4d5ef858a05954f03340048131f60a2004b7b28afc65f7bd2301636a7002d6cb",
+    "url": "https://zenodo.org/records/1227121/files/OHALLWAY_16k.zip?download=1"
+  },
+  "PCAFETER_16k.zip": {
+    "bytes": 107431494,
+    "md5": "99927d148128254141a9417d051510bb",
+    "sha256": "89be7194b83cd583c4b12f4bf7c19e9cf0e612b95312e9f4aedc968cd811bcd5",
+    "url": "https://zenodo.org/records/1227121/files/PCAFETER_16k.zip?download=1"
+  },
+  "STRAFFIC_16k.zip": {
+    "bytes": 118572691,
+    "md5": "2efa87262f272bbf9ba578088e81939c",
+    "sha256": "2df9b444afb3b789df92d96cb6f58a50653cdbbbe7e7e74fcd9de2af6385fbea",
+    "url": "https://zenodo.org/records/1227121/files/STRAFFIC_16k.zip?download=1"
+  },
+  "dev-clean.tar.gz": {
+    "bytes": 337926286,
+    "md5": "42e2234ba48799c1f50f24a7926300a1",
+    "sha256": "76f87d090650617fca0cac8f88b9416e0ebf80350acb97b343a85fa903728ab3",
+    "url": "https://www.openslr.org/resources/12/dev-clean.tar.gz"
+  }
+}

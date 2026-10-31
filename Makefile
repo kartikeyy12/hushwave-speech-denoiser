@@ -3,7 +3,7 @@ VENV := .venv
 PY := $(VENV)/bin/python
 PYTHON ?= $(shell bash scripts/find_python.sh)
 
-.PHONY: setup data test lint typecheck docs d1-figure experiments figures report demo-live demo-replay verify all clean
+.PHONY: setup data data-check test lint typecheck docs d1-figure experiments figures report demo-live demo-replay verify all clean
 
 setup:
 	@test -n "$(PYTHON)" || { echo "No suitable Python found. Install one or pass PYTHON=/path/to/python"; exit 1; }
@@ -15,7 +15,10 @@ setup:
 	@echo "setup complete; requirements.lock written from the real pip freeze"
 
 data:
-	@echo "make data is added in milestone M3"; exit 1
+	$(PY) scripts/download_data.py
+
+data-check:
+	$(PY) scripts/download_data.py --check-urls
 
 test:
 	$(PY) -m pytest
