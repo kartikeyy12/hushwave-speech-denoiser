@@ -170,25 +170,40 @@ That assumes the recording starts with silence, which is false for a live microp
 
 Idea: within any window long enough to contain a pause between words, the smoothed periodogram dips down to the noise floor, even while speech is present at other times.
 
-1. Smooth the periodogram as above.
-2. Track the minimum of P(n,k) over a window of D frames. Ours is U = @@ms_n_sub@@ sub-windows of V = @@ms_sub_frames@@ frames, so D = @@ms_window_frames@@ frames = @@ms_window_s@@ s (target was about 1.5 s). Sub-windows let the minimum forget old values in steps instead of rescanning all D frames each time.
-3. Multiply by a bias factor B: for noise-only input the minimum of a fluctuating positive quantity is below its mean, so lambda_d_hat = B * P_min with B > 1 so that E[lambda_d_hat] = lambda_d.
+1. Smooth the periodogram with a = @@ms_alpha_s@@ (a memory of about 1 / (1 - a) frames). The recursion is bias-corrected, so the smoothed value is a proper weighted average of the frames seen so far, from the very first frame.
+2. Track the minimum over a sliding window made of U = @@ms_n_sub@@ sub-windows of V = @@ms_sub_frames@@ frames. The ring keeps the minima of the last U - 1 completed sub-windows plus the running minimum of the current one, so the nominal window is D = U V = @@ms_window_frames@@ frames (@@ms_window_s@@ s) and the span actually covered is between (U - 1) V = @@ms_span_min@@ and U V - 1 = @@ms_span_max@@ frames. Sub-windows let the minimum forget old values in steps instead of rescanning every frame.
+3. Multiply by a bias factor B. For noise-only input the minimum of a fluctuating positive quantity is below its mean, so lambda_d_hat = B * P_min with B > 1 gives E[lambda_d_hat] = lambda_d.
 
-Martin's paper gives B from a theory of the variance of P. We do not copy tables. B depends on a_s, D and the frame overlap (which correlates adjacent frames). In M4, B is calibrated by simulation on white Gaussian noise using our exact constants and stored by code, and a test checks that the resulting estimator is unbiased on stationary noise within a stated tolerance.
+Martin's paper derives B from the variance of P. We do not copy tables. B depends on a, the window and the 50 % frame overlap, so it is **calibrated by simulation** with our own STFT: pass stationary white Gaussian noise through the pipeline, measure mean(estimate / true PSD), and invert. The calibration is also done as a curve B[n] indexed by the number of frames seen, because the window is only partly full during the first 1.5 s and the first STFT frame holds just half of the window energy. Results, all computed by `noise_est.py`:
+
+| Quantity | Value |
+|---|---|
+| Steady-state B (minimum statistics) | @@ms_bias_steady@@ |
+| B after the first frame | @@ms_bias_first@@ |
+| B just before the window is full | @@ms_bias_mid@@ |
+| Steady-state B (MCRA) | @@mcra_bias@@ |
 
 ### 6.3 MCRA-style speech-presence-controlled averaging (Cohen)
 
 Idea: update the noise estimate quickly where speech is absent, and hardly at all where it is present.
 
-1. Smoothed periodogram S(n,k) (optionally also smoothed over neighbouring bins), and its local minimum S_min(n,k) tracked as in 6.2.
-2. Indicator I(n,k) = 1 if S / S_min > delta (speech likely), else 0.
-3. Speech presence probability p(n,k) = a_p p(n-1,k) + (1 - a_p) I(n,k).
-4. Time-varying smoothing a_t(n,k) = a_d + (1 - a_d) p(n,k).
-5. lambda_d_hat(n,k) = a_t lambda_d_hat(n-1,k) + (1 - a_t) |Y(n,k)|^2.
+1. Smoothed periodogram S(n,k) with a_s = @@mcra_alpha_s@@, computed from a 3-tap frequency-smoothed periodogram, and its local minimum S_min(n,k) tracked as in 6.2 over the same window. The minimum tracker stays idle during the first @@mcra_warmup@@ frames (2 / (1 - a_s)), so the half-energy first frame cannot pass for a speech-free floor.
+2. Indicator I(n,k) = 1 if S > delta * S_min (speech likely), else 0, with delta = @@mcra_delta@@.
+3. Speech presence probability p(n,k) = a_p p(n-1,k) + (1 - a_p) I(n,k), a_p = @@mcra_alpha_p@@.
+4. Time-varying smoothing a_t(n,k) = a_d + (1 - a_d) p(n,k), a_d = @@mcra_alpha_d@@.
+5. lambda_d_hat(n,k) = a_t lambda_d_hat(n-1,k) + (1 - a_t) |Y(n,k)|^2, implemented as a normalised weighted average so the start-up has no initial-condition bias.
 
-The minimum only gates the update, so the estimate itself is a plain average of |Y|^2 in noise-only regions and needs no bias factor. Bias enters only through the choice of delta. The constants (a_s, a_p, a_d, delta) start from literature-style values and are tuned on the DEV set in M4/M8.
+The minimum only gates the update, so in noise-only regions the estimate is a plain average of |Y|^2. Its calibrated factor is therefore almost 1 (table above). The constants start from literature-style values and are tuned on the DEV set in M8.
 
 The primary estimator is chosen on DEV. The other stays as an ablation.
+
+### 6.4 Measured tracking behaviour
+
+Noise power jumps by the stated amount; the table gives the frames (and milliseconds) until the estimate has moved halfway, in dB, towards the new level (`noise_est.measure_step_delay`, independent exponential periodogram frames, fixed seed).
+
+@@step_table@@
+
+Both trackers need roughly one window to follow a rise in noise, because the old, lower values must leave the minimum window (MCRA is faster for small rises). Falls are followed in about @@step_down_ms@@ ms. After the start-up transient both estimators stay within a few percent of the true level on stationary noise (tests in `tests/test_noise_est.py`, tolerance 5 %).
 
 ## 7. Gain rules
 
@@ -275,8 +290,8 @@ Then 10 log10( sum x^2 / sum (g d)^2 ) = s exactly, by construction. Power is av
 
 ## 9. Known weak points identified so far
 
-- Start-up: with no initial silence, lambda_d_hat starts from the first frame's periodogram. If speech is already present, the estimate is too high until the minimum window has passed a pause. Quantified in M4.
-- Minimum statistics lags rising noise by up to about one window (@@ms_window_s@@ s). MCRA follows faster but is sensitive to delta. M4 measures the response to a noise step.
+- Start-up: with no initial silence the estimate is too high while speech is present from the first frame, until a pause has passed through the minimum window. The synthetic test in M4 (speech from sample 0, 0.6 s on, 1.0 s off) settles within +4 / -1 dB after five seconds.
+- Both trackers lag rising noise by up to about one window (@@ms_window_s@@ s), see section 6.4. MCRA follows small rises faster but is sensitive to delta.
 - The Gaussian, independent-cell model is approximate. Strongly tonal or highly non-stationary noise breaks it.
 - Intrusive metrics (PESQ, STOI) need a clean reference. Our own recordings have none, so they get non-intrusive treatment only, kept separate.
 

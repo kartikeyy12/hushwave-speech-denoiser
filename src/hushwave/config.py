@@ -23,6 +23,12 @@ class Config:
     mains_hz: float = 50.0
     ms_n_sub: int = 6
     ms_sub_frames: int = 16
+    ms_alpha_s: float = 0.9
+    mcra_alpha_s: float = 0.8
+    mcra_alpha_p: float = 0.2
+    mcra_alpha_d: float = 0.95
+    mcra_delta: float = 5.0
+    noise_floor: float = 1e-12
     dd_alpha: float = 0.98
 
     def __post_init__(self) -> None:
@@ -40,8 +46,13 @@ class Config:
             raise ValueError("mains_hz must be positive")
         if self.ms_n_sub < 1 or self.ms_sub_frames < 1:
             raise ValueError("minimum-statistics window dimensions must be at least 1")
-        if not 0.0 < self.dd_alpha < 1.0:
-            raise ValueError("dd_alpha must lie strictly between 0 and 1")
+        for name in ("dd_alpha", "ms_alpha_s", "mcra_alpha_s", "mcra_alpha_p", "mcra_alpha_d"):
+            if not 0.0 < getattr(self, name) < 1.0:
+                raise ValueError(f"{name} must lie strictly between 0 and 1")
+        if self.mcra_delta <= 1.0:
+            raise ValueError("mcra_delta must exceed 1")
+        if self.noise_floor <= 0.0:
+            raise ValueError("noise_floor must be positive")
 
     @property
     def nyquist_hz(self) -> float:

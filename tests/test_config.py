@@ -45,6 +45,10 @@ def test_config_is_frozen() -> None:
         {"ms_sub_frames": 0},
         {"dd_alpha": 0.0},
         {"dd_alpha": 1.0},
+        {"ms_alpha_s": 1.0},
+        {"mcra_alpha_p": 0.0},
+        {"mcra_delta": 1.0},
+        {"noise_floor": 0.0},
     ],
 )
 def test_invalid_config_is_rejected(kwargs: dict[str, float]) -> None:

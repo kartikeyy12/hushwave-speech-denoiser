@@ -14,6 +14,13 @@ from pathlib import Path
 from scipy.special import exp1
 
 from hushwave.config import DEFAULT, Config
+from hushwave.noise_est import (
+    KINDS,
+    McraEstimator,
+    MinStatsEstimator,
+    calibrated_bias_curve,
+    measure_step_delay,
+)
 from hushwave.theory import (
     aliasing_experiment,
     butterworth_highpass_gain_db,
@@ -57,6 +64,25 @@ def _frame_ablation_table(base: Config) -> str:
     return "\n".join(lines)
 
 
+def _step_table(cfg: Config) -> tuple[str, float]:
+    labels = {"minstats": "Minimum statistics", "mcra": "MCRA"}
+    steps = (6.0, 10.0, -6.0)
+    lines = [
+        "| Estimator | +6 dB | +10 dB | -6 dB |",
+        "|---|---|---|---|",
+    ]
+    down_ms = 0.0
+    for kind in KINDS:
+        cells = []
+        for step in steps:
+            frames = measure_step_delay(kind, step, n_bins=cfg.n_bins).delay_frames
+            cells.append(f"{frames} frames ({frames * cfg.hop_ms:.0f} ms)")
+            if step < 0:
+                down_ms = max(down_ms, frames * cfg.hop_ms)
+        lines.append(f"| {labels[kind]} | " + " | ".join(cells) + " |")
+    return "\n".join(lines), down_ms
+
+
 def build_values(cfg: Config = DEFAULT) -> dict[str, str]:
     """Every number that appears in THEORY.md, as a display string."""
     sine = window_metrics(sqrt_hann(cfg.frame_len))
@@ -67,6 +93,12 @@ def build_values(cfg: Config = DEFAULT) -> dict[str, str]:
         return butterworth_highpass_gain_db(freq_hz, cfg.hp_cutoff_hz, cfg.fs)
 
     xi_example, gamma_example = 1.0, 0.01
+    ms_estimator = MinStatsEstimator(cfg.n_bins)
+    mcra_estimator = McraEstimator(cfg.n_bins)
+    curve = calibrated_bias_curve(
+        cfg.n_bins, alpha_s=cfg.ms_alpha_s, n_sub=cfg.ms_n_sub, sub_frames=cfg.ms_sub_frames
+    )
+    step_table, step_down_ms = _step_table(cfg)
     v_example = xi_example / (1.0 + xi_example) * gamma_example
     lsa_example = xi_example / (1.0 + xi_example) * math.exp(0.5 * float(exp1(v_example)))
     return {
@@ -93,6 +125,20 @@ def build_values(cfg: Config = DEFAULT) -> dict[str, str]:
         "lat_max_samples": f"{cfg.latency_max_samples}",
         "lat_min_ms": f"{1000.0 * cfg.latency_min_samples / cfg.fs:.1f}",
         "lat_max_ms": f"{1000.0 * cfg.latency_max_samples / cfg.fs:.1f}",
+        "ms_alpha_s": f"{cfg.ms_alpha_s}",
+        "ms_span_min": f"{(cfg.ms_n_sub - 1) * cfg.ms_sub_frames}",
+        "ms_span_max": f"{cfg.ms_window_frames - 1}",
+        "ms_bias_steady": f"{ms_estimator.bias:.2f}",
+        "ms_bias_first": f"{curve[0]:.2f}",
+        "ms_bias_mid": f"{curve[cfg.ms_window_frames - 2]:.2f}",
+        "mcra_bias": f"{mcra_estimator.bias:.3f}",
+        "mcra_alpha_s": f"{cfg.mcra_alpha_s}",
+        "mcra_alpha_p": f"{cfg.mcra_alpha_p}",
+        "mcra_alpha_d": f"{cfg.mcra_alpha_d}",
+        "mcra_delta": f"{cfg.mcra_delta}",
+        "mcra_warmup": f"{math.ceil(2.0 / (1.0 - cfg.mcra_alpha_s))}",
+        "step_table": step_table,
+        "step_down_ms": f"{step_down_ms:.0f}",
         "sqnr_fs_db": f"{quantization_sqnr_db(cfg.pcm_bits):.1f}",
         "sqnr_16_40_db": f"{quantization_sqnr_db(16, 40.0):.1f}",
         "sqnr_8_40_db": f"{quantization_sqnr_db(8, 40.0):.1f}",
