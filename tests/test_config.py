@@ -22,6 +22,12 @@ def test_default_derived_values() -> None:
     assert DEFAULT.latency_min_samples == 256
     assert DEFAULT.latency_max_samples == 511
     assert DEFAULT.dd_time_constant_ms == pytest.approx(-16.0 / math.log(0.98))
+    assert DEFAULT.g_min_db == pytest.approx(-20.0)
+    assert DEFAULT.gain_time_constant_ms == pytest.approx(-16.0 / math.log(0.5))
+
+
+def test_gain_smoother_with_mu_zero_has_no_memory() -> None:
+    assert Config(gain_mu=0.0).gain_time_constant_ms == 0.0
 
 
 def test_config_is_frozen() -> None:
@@ -49,6 +55,11 @@ def test_config_is_frozen() -> None:
         {"mcra_alpha_p": 0.0},
         {"mcra_delta": 1.0},
         {"noise_floor": 0.0},
+        {"ss_a": 0.9},
+        {"g_min": 0.0},
+        {"g_min": 1.1},
+        {"gain_mu": -0.1},
+        {"gain_mu": 1.0},
     ],
 )
 def test_invalid_config_is_rejected(kwargs: dict[str, float]) -> None:

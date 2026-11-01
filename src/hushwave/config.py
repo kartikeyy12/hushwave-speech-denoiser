@@ -30,6 +30,9 @@ class Config:
     mcra_delta: float = 5.0
     noise_floor: float = 1e-12
     dd_alpha: float = 0.98
+    ss_a: float = 2.0
+    g_min: float = 0.1
+    gain_mu: float = 0.5
 
     def __post_init__(self) -> None:
         if self.fs <= 0:
@@ -51,6 +54,12 @@ class Config:
                 raise ValueError(f"{name} must lie strictly between 0 and 1")
         if self.mcra_delta <= 1.0:
             raise ValueError("mcra_delta must exceed 1")
+        if self.ss_a < 1.0:
+            raise ValueError("ss_a (over-subtraction factor) must be at least 1")
+        if not 0.0 < self.g_min <= 1.0:
+            raise ValueError("g_min must lie in (0, 1]")
+        if not 0.0 <= self.gain_mu < 1.0:
+            raise ValueError("gain_mu must lie in [0, 1)")
         if self.noise_floor <= 0.0:
             raise ValueError("noise_floor must be positive")
 
@@ -96,6 +105,18 @@ class Config:
     def dd_time_constant_ms(self) -> float:
         """Time constant of the decision-directed recursion, hop / -ln(alpha)."""
         return -self.hop_ms / math.log(self.dd_alpha)
+
+    @property
+    def g_min_db(self) -> float:
+        """Maximum attenuation allowed by the gain floor, in dB (negative)."""
+        return 20.0 * math.log10(self.g_min)
+
+    @property
+    def gain_time_constant_ms(self) -> float:
+        """Time constant of the gain smoother G_s(n) = mu G_s(n-1) + (1 - mu) G(n)."""
+        if self.gain_mu == 0.0:
+            return 0.0
+        return -self.hop_ms / math.log(self.gain_mu)
 
 
 DEFAULT = Config()
