@@ -33,6 +33,7 @@ class Config:
     ss_a: float = 2.0
     g_min: float = 0.1
     gain_mu: float = 0.5
+    activity_db: float = 40.0
 
     def __post_init__(self) -> None:
         if self.fs <= 0:
@@ -60,6 +61,8 @@ class Config:
             raise ValueError("g_min must lie in (0, 1]")
         if not 0.0 <= self.gain_mu < 1.0:
             raise ValueError("gain_mu must lie in [0, 1)")
+        if self.activity_db <= 0.0:
+            raise ValueError("activity_db must be positive")
         if self.noise_floor <= 0.0:
             raise ValueError("noise_floor must be positive")
 

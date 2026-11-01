@@ -37,7 +37,7 @@ from hushwave.fft import irfft, rfft
 from hushwave.filters import Biquad, highpass_biquad
 from hushwave.gains import GainStage
 from hushwave.noise_est import make_estimator
-from hushwave.stft import num_frames
+from hushwave.stft import istft, num_frames, stft
 from hushwave.windows import sqrt_hann
 
 FloatArray = NDArray[np.float64]
@@ -60,6 +60,54 @@ def enhance(
         b, a = highpass_biquad(cfg.hp_cutoff_hz, cfg.fs)
         signal = Biquad(b, a).process(signal)
     return spectral_denoise(signal, rule, estimator, cfg, gain_overrides, estimator_overrides)
+
+
+@dataclass(frozen=True)
+class Components:
+    """The system output split into the parts produced from the clean speech and from the noise."""
+
+    speech: FloatArray
+    noise: FloatArray
+    output: FloatArray
+
+
+def gain_components(
+    clean: ArrayLike,
+    noise: ArrayLike,
+    cfg: Config = DEFAULT,
+    rule: str = DEFAULT_RULE,
+    estimator: str = DEFAULT_ESTIMATOR,
+    prefilter: bool = True,
+    gain_overrides: dict[str, float] | None = None,
+    estimator_overrides: dict[str, float] | None = None,
+) -> Components:
+    """Run the system on clean + noise, then apply the very same gains to each part separately.
+
+    The gains are computed from the mixture exactly as `enhance` does, and the STFT, the
+    high-pass filter and the gain multiplication are linear, so speech + noise equals the output
+    up to rounding. The speech part is what the system did to the speech, the noise part is the
+    residual noise. Only possible for systems that work by applying gains.
+    """
+    x = _as_signal(clean)
+    d = _as_signal(noise)
+    if x.shape != d.shape:
+        raise ValueError("clean and noise must have the same length")
+    parts = [x, d, x + d]
+    if prefilter:
+        b, a = highpass_biquad(cfg.hp_cutoff_hz, cfg.fs)
+        parts = [Biquad(b, a).process(p) for p in parts]
+    spec_x, spec_d, spec_y = (stft(p, cfg.frame_len, cfg.hop) for p in parts)
+    power = np.abs(spec_y) ** 2
+    tracker = make_estimator(estimator, cfg.n_bins, cfg, **(estimator_overrides or {}))
+    stage = GainStage(rule, cfg.n_bins, cfg, **(gain_overrides or {}))
+    gains = np.empty_like(power)
+    for index, frame in enumerate(power):
+        gains[index] = stage.process(frame, tracker.update(frame))
+
+    def synth(spectrum: NDArray[np.complex128]) -> FloatArray:
+        return istft(spectrum * gains, x.size, cfg.frame_len, cfg.hop)
+
+    return Components(speech=synth(spec_x), noise=synth(spec_d), output=synth(spec_y))
 
 
 class StreamingEnhancer:

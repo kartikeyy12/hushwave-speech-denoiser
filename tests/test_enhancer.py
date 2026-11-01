@@ -278,3 +278,42 @@ def test_performance_report_is_json_ready_and_consistent() -> None:
     assert report["per_sample_delay_range_samples"] == [DEFAULT.latency_min_samples, D]
     assert report["streaming_vs_batch_max_abs_difference"] < TOL
     assert len(report["timing"]) == 4
+
+
+# ------------------------------------------------------------ gain_components
+def test_components_add_up_to_the_output_and_match_enhance(rng: np.random.Generator) -> None:
+    from hushwave.enhancer import gain_components
+    from hushwave.synth import mix_at_snr
+
+    clean = noise(rng, 3 * FS, 0.2)
+    mix = mix_at_snr(clean, rng.standard_normal(clean.size), 5.0)
+    parts = gain_components(clean, mix.noise)
+    assert np.max(np.abs(parts.speech + parts.noise - parts.output)) < 1e-12
+    assert np.max(np.abs(parts.output - enhance(mix.noisy))) < 1e-12
+
+
+def test_components_with_unit_gain_return_the_inputs(rng: np.random.Generator) -> None:
+    from hushwave.enhancer import gain_components
+
+    clean, extra = noise(rng, 3000), noise(rng, 3000, 0.05)
+    parts = gain_components(clean, extra, prefilter=False, gain_overrides={"g_min": 1.0})
+    np.testing.assert_allclose(parts.speech, clean, atol=1e-10)
+    np.testing.assert_allclose(parts.noise, extra, atol=1e-10)
+
+
+def test_components_validate_and_pass_options_through(rng: np.random.Generator) -> None:
+    from hushwave.enhancer import gain_components
+
+    clean, extra = noise(rng, 3000), noise(rng, 3000, 0.05)
+    with pytest.raises(ValueError, match="same length"):
+        gain_components(clean, extra[:-1])
+    default = gain_components(clean, extra)
+    other = gain_components(
+        clean,
+        extra,
+        rule="wiener",
+        estimator="minstats",
+        gain_overrides={"g_min": 0.3},
+        estimator_overrides={"alpha_s": 0.7},
+    )
+    assert not np.allclose(default.output, other.output)

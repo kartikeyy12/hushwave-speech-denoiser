@@ -60,6 +60,7 @@ def test_config_is_frozen() -> None:
         {"g_min": 1.1},
         {"gain_mu": -0.1},
         {"gain_mu": 1.0},
+        {"activity_db": 0.0},
     ],
 )
 def test_invalid_config_is_rejected(kwargs: dict[str, float]) -> None:
