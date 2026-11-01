@@ -147,7 +147,18 @@ Frame j covers samples [jH, jH + N). Sample n is last touched by frame j = floor
 
 N - 1 - (n mod H) samples,
 
-between N - H = 256 samples (16.0 ms) and N - 1 = 511 samples (31.9 ms). Compute time adds to this. M6 fixes the engine's constant delay and measures end-to-end latency on the real audio path.
+between N - H = 256 samples (16.0 ms) and N - 1 = 511 samples (31.9 ms). Compute time adds to this. Section 4.5 fixes the engine's constant delay at the worst case, and the measured compute cost is reported separately (`make perf`).
+
+### 4.5 Streaming engine (`enhancer.py`)
+
+The signal path is the same in the batch function `enhance(x)` and in `StreamingEnhancer.process(block)`: high-pass biquad, sqrt-Hann STFT, power, noise PSD tracker, gain rule, inverse STFT with overlap-add.
+
+- **Layout.** The stream is primed with N - H zeros, exactly as `stft()` pads. Frame f covers padded samples [f H, f H + N) and is complete once input sample (f + 1) H - 1 has arrived. After frame f, padded samples [f H, f H + H) are final; frame 0 finalises only padding, which is discarded.
+- **Constant delay.** Output sample m is final between H and N - 1 samples after input sample m arrived (section 4.4). A block-in, block-out engine needs one delay for every sample, so the engine delays its output by the worst case, D = N - 1 = 511 samples (31.9 ms). The best case, 256 samples (16.0 ms), would need output blocks of varying length; the extra delay is the price of a regular interface.
+- **Interface.** `process` returns exactly as many samples as it was given (blocks of 0, 1, any size, larger than a frame). The first D samples of the stream are zeros. `flush` appends the zero tail that `stft()` would have appended, finishes the last frames, and returns the final D samples; the engine then resets for a new stream.
+- **State.** The biquad memory, the unconsumed input (fewer than N samples), the overlap half of the previous frame (H samples), the noise tracker, the decision-directed and smoothing memory of the gain stage, and a short output queue (at most D - H samples after each call). None of it grows with stream length.
+- **Equality with batch.** For every block-size sequence tried, including blocks of 1 and blocks larger than a frame, the streamed output with its delay removed equals `enhance(x)` to within 1e-9 (a test asserts this, with random sequences from `hypothesis`). Both paths do the same arithmetic in the same order; the filter state and frame loop are the only things carried between calls.
+- **What is not included.** The delay above is algorithmic. Compute time, the audio driver's buffers and the sound card's own latency add to it; `make perf` measures compute time and the live demo (M9) reports the audio path.
 
 ## 5. Pre-filter: 2nd-order Butterworth high-pass, our own biquad
 
@@ -366,6 +377,7 @@ Then 10 log10( sum x^2 / sum (g d)^2 ) = s exactly, by construction. Power is av
 - G1 with a = 2 is aggressive when the noise PSD is over-estimated, for instance during the start-up transient above: the over-estimate is subtracted from speech as well. Tuning a on DEV (M8) addresses this; it is not a bug in the rule.
 - G3 passes more residual noise cells than G2 (section 7.5), and cepstral smoothing of xi, which targets exactly that, is not implemented.
 - The decision-directed recursion reacts to speech onsets with a lag (section 7.2). The tracker and the recursion share start-up weaknesses: until they have settled, speech present from the first frame is attenuated.
+- The constant stream delay is the worst case, N - 1 samples, not the best case; a variable-delay interface would save up to half of it at the cost of irregular output blocks (section 4.5).
 - The Gaussian, independent-cell model is approximate. Strongly tonal or highly non-stationary noise breaks it.
 - Intrusive metrics (PESQ, STOI) need a clean reference. Our own recordings have none, so they get non-intrusive treatment only, kept separate.
 

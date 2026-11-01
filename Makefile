@@ -3,7 +3,7 @@ VENV := .venv
 PY := $(VENV)/bin/python
 PYTHON ?= $(shell bash scripts/find_python.sh)
 
-.PHONY: setup data data-check test lint typecheck docs d1-figure experiments figures report demo-live demo-replay verify all clean
+.PHONY: setup data data-check test lint typecheck docs d1-figure perf experiments figures report demo-live demo-replay verify all clean
 
 setup:
 	@test -n "$(PYTHON)" || { echo "No suitable Python found. Install one or pass PYTHON=/path/to/python"; exit 1; }
@@ -35,6 +35,9 @@ docs:
 
 d1-figure:
 	$(PY) scripts/make_aliasing_figure.py
+
+perf:
+	$(PY) scripts/measure_engine.py
 
 experiments:
 	@echo "make experiments is added in milestone M8"; exit 1
