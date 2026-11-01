@@ -45,3 +45,25 @@ def test_main_check_and_write(tmp_path: Path) -> None:
     assert main(["--check"], root=tmp_path) == 1
     assert main([], root=tmp_path) == 0
     assert main(["--check"], root=tmp_path) == 0
+
+
+def test_gain_values_in_the_docs_come_from_the_code() -> None:
+    values = build_values()
+    assert values["ss_a"] == "2"
+    assert values["g_min"] == "0.1"
+    assert values["g_min_db"] == "-20"
+    assert values["gain_mu"] == "0.5"
+    assert values["gain_tau_ms"] == "23"
+    assert values["gain_spike_pct"] == "50"
+    assert values["ss_escape_pct"] == "0.72"
+    assert values["ss_escape_a1_pct"] == "29.1"
+
+
+def test_gain_tables_have_the_expected_rows() -> None:
+    values = build_values()
+    gain_rows = values["gain_table"].splitlines()
+    assert len(gain_rows) == 2 + 5
+    assert "5.31" in gain_rows[3]
+    noise_rows = values["noise_only_table"].splitlines()
+    assert len(noise_rows) == 2 + 4
+    assert values["lsa_escape_pct"] != values["dd_escape_pct"]

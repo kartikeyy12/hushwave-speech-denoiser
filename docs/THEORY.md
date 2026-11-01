@@ -11,6 +11,8 @@ All citations are marked **verify before submission**.
 3. **MMSE-LSA gain can exceed 1.** Derived in section 7.3. For xi = 1 and gamma = 0.01 the raw gain is 5.31. We clip G3 to at most 1, so "0 < G <= 1" holds for every rule.
 4. **Latency is not one number.** Section 4.4 derives a per-sample delay between 256 and 511 samples. M6 fixes and measures the engine's constant delay.
 5. **Bias constants are calibrated, not copied.** Section 6 explains why the minimum-statistics bias factor is computed by simulation in M4 for our exact smoothing constants.
+6. **Baseline B4 is power spectral subtraction in disguise.** A Wiener gain driven by the instantaneous estimate xi = max(gamma - 1, 0) equals 1 - 1/gamma for gamma > 1 (section 7.6). It is kept as the "no decision-directed smoothing" control, and described honestly as that.
+7. **The decision-directed recursion starts from zero previous SNR and has no separate floor on xi.** Section 7.5 gives the reasons.
 
 ## 1. Problem and signal model
 
@@ -227,7 +229,9 @@ Estimate |X| = max(|Y| - a sqrt(lambda_d), floor). Written as a gain:
 
 G1 = max(1 - a / sqrt(gamma), g_min), with a >= 1 (over-subtraction).
 
-It depends only on gamma. a and g_min are tuned on DEV.
+It depends only on gamma. The defaults are a = 2 and g_min = 0.1 (a maximum attenuation of -20 dB); both are tuned on DEV in M8.
+
+Why a = 2 as a starting value: with an exact noise PSD, gamma in a noise-only cell is exponentially distributed with mean 1, so G1 leaves the floor only when gamma > (a / (1 - g_min))^2, which has probability exp(-(a / (1 - g_min))^2). For a = 2 that threshold is 6.9 dB and 0.72 % of noise-only cells escape the floor; with a = 1 it would be 29.1 %. A smaller escape fraction means fewer isolated surviving cells, which is the musical-noise mechanism of section 7.4. The price is speech attenuation when the noise PSD is over-estimated, so a is a trade-off, not a free improvement.
 
 ### 7.2 G2: Wiener gain, from the MMSE criterion
 
@@ -286,11 +290,66 @@ In noise-only bins the periodogram |D|^2 is exponentially distributed: its stand
 Controls, all ablated in M8:
 
 - **Gain floor g_min**: residual noise is attenuated by a fixed amount, not zeroed, so what remains is noise-like.
-- **Temporal gain smoothing**: G_s(n) = mu G_s(n-1) + (1 - mu) G(n).
+- **Temporal gain smoothing**: G_s(n) = mu G_s(n-1) + (1 - mu) G(n), with mu = 0.5. Time constant hop / (-ln mu) = 23 ms; a one-frame gain spike is reduced to 50 % of its height. Applied to the final gain only (section 7.5).
 - **Large alpha in decision-directed xi.**
-- **Optional cepstral smoothing of xi** (flagged: if I cannot recall a published detail, we derive our own and mark it).
+- **Cepstral smoothing of xi: not implemented.** It was optional and is cut to protect the schedule. It is listed in section 9 as an untried control.
 
 A musical-noise indicator metric is defined in M7.
+
+### 7.5 Implementation decisions and defaults (`gains.py`)
+
+| Parameter | Default | Role |
+|---|---|---|
+| a | 2 | over-subtraction factor of G1 (section 7.1) |
+| g_min | 0.1 (-20 dB) | gain floor for every rule |
+| mu | 0.5 | temporal gain smoothing (section 7.4) |
+| alpha | 0.98 | decision-directed memory (section 7.2) |
+
+All four are starting values. M8 tunes them on DEV only and reports the TEST result once.
+
+- **Floor and clip.** Every rule returns G in [g_min, 1]. G3_raw is clipped at 1 (section 7.3) and then floored.
+- **What the recursion feeds back.** The previous cleaned amplitude is the rule's gain after the floor and before temporal smoothing, times |Y|. The smoother is a pure output stage and cannot change how xi evolves.
+- **Start.** The previous SNR is zero at the first frame, so xi_hat(0) = (1 - alpha) max(gamma - 1, 0). The first frames are the least reliable (half the window energy, a noise estimate built from one frame), so the safe start is strong attenuation rather than a burst of unattenuated noise. Cost: speech present from the first frame is attenuated until the recursion has built up.
+- **No separate floor on xi.** g_min already bounds the output; a floor on xi would be a second parameter doing the same job.
+- **Edge cases are defined, not left to NaN.** gamma = 0 maps G1 to the floor; xi = 0 maps G3_raw to 0; gamma = 0 with xi > 0 maps G3_raw to +infinity (the limit as |Y| tends to 0), which the clip turns into 1.
+
+Gain values at the defaults (computed by `gains.py`):
+
+| xi (dB) | G2 | G3 at gamma = 1 + xi | G3_raw at gamma = 0.01 | G3 at gamma = 0.01 (clipped) |
+|---|---|---|---|---|
+| -10 | 0.100 | 0.226 | 2.26 | 1.000 |
+| 0 | 0.500 | 0.558 | 5.31 | 1.000 |
+| 5 | 0.760 | 0.764 | 6.56 | 1.000 |
+| 10 | 0.909 | 0.909 | 7.18 | 1.000 |
+| 20 | 0.990 | 0.990 | 7.49 | 1.000 |
+
+G3_raw >= G2 for every gamma, and the excess is largest when gamma is small compared with its typical value 1 + xi. At gamma = 0.01 the raw value exceeds 1 in every row; the clip turns it into 1.
+
+Behaviour on pure noise, with an exact noise PSD so that no tracker error is involved (400 frames by 129 bins of exponentially distributed power, first 100 frames skipped, temporal smoothing off):
+
+| Rule | Mean gain | Cells above 2 g_min |
+|---|---|---|
+| G1 (a = 2) | 0.100 | 0.2 % |
+| G2, decision-directed | 0.100 | 0.0 % |
+| G3, decision-directed | 0.158 | 16.3 % |
+| B4 (instantaneous xi) | 0.213 | 28.4 % |
+
+Reading: the instantaneous Wiener rule (B4) lets 28 % of noise-only cells rise above twice the floor; the decision-directed recursion cuts that to 0.0 %. G3 lets 16 % through, more than G2, because G3 >= G2 by construction. So G3 attenuates less than G2 everywhere. Whether that preserves speech or mainly leaves more residual noise is not assumed here: it is measured on DEV in M8.
+
+### 7.6 Baselines (`baselines.py`)
+
+| Label | System | Notes |
+|---|---|---|
+| B0 | unprocessed input | reference for every metric improvement |
+| B1 | G1 on the shared pipeline, mu = 0 | classical spectral subtraction with floor |
+| B2 | `scipy.signal.wiener`, 15-sample window | time-domain local-statistics Wiener filter, untuned, third-party |
+| B3 | `noisereduce`, non-stationary mode | independent third-party spectral gating; optional install |
+| B4 | Wiener gain, xi = max(gamma - 1, 0), mu = 0 | no decision-directed smoothing |
+| B5 | full HushWave | built in M6 on the streaming engine |
+
+B1, B4 and B5 share the STFT, the noise tracker and the synthesis, so differences between them come from the gain rule alone. B2 and B3 are different algorithms entirely and are reported as such.
+
+B4 equals power spectral subtraction: for gamma > 1, xi = gamma - 1 gives G2 = (gamma - 1) / gamma = 1 - 1/gamma, which is the power-domain subtraction gain with a = 1. It is therefore a meaningful "no decision-directed smoothing" control, not an independent method.
 
 ## 8. Test-signal mixing: exact definition
 
@@ -304,6 +363,9 @@ Then 10 log10( sum x^2 / sum (g d)^2 ) = s exactly, by construction. Power is av
 
 - Start-up: with no initial silence the estimate is too high while speech is present from the first frame, until a pause has passed through the minimum window. The synthetic test in M4 (speech from sample 0, 0.6 s on, 1.0 s off) settles within +4 / -1 dB after five seconds.
 - Both trackers lag rising noise by up to about one window (1.536 s), see section 6.4. MCRA follows small rises faster but is sensitive to delta.
+- G1 with a = 2 is aggressive when the noise PSD is over-estimated, for instance during the start-up transient above: the over-estimate is subtracted from speech as well. Tuning a on DEV (M8) addresses this; it is not a bug in the rule.
+- G3 passes more residual noise cells than G2 (section 7.5), and cepstral smoothing of xi, which targets exactly that, is not implemented.
+- The decision-directed recursion reacts to speech onsets with a lag (section 7.2). The tracker and the recursion share start-up weaknesses: until they have settled, speech present from the first frame is attenuated.
 - The Gaussian, independent-cell model is approximate. Strongly tonal or highly non-stationary noise breaks it.
 - Intrusive metrics (PESQ, STOI) need a clean reference. Our own recordings have none, so they get non-intrusive treatment only, kept separate.
 

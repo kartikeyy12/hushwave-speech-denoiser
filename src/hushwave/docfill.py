@@ -11,9 +11,18 @@ import re
 import sys
 from pathlib import Path
 
+import numpy as np
 from scipy.special import exp1
 
 from hushwave.config import DEFAULT, Config
+from hushwave.gains import (
+    RULES,
+    compute_gains,
+    lsa_gain,
+    lsa_gain_raw,
+    noise_only_floor_escape,
+    wiener_gain,
+)
 from hushwave.noise_est import (
     KINDS,
     McraEstimator,
@@ -83,6 +92,56 @@ def _step_table(cfg: Config) -> tuple[str, float]:
     return "\n".join(lines), down_ms
 
 
+NOISE_ONLY_FRAMES = 400
+NOISE_ONLY_BINS = 129
+NOISE_ONLY_SEED = 20260103
+NOISE_ONLY_SKIP = 100
+
+
+def _gain_table(cfg: Config) -> str:
+    """G2 and G3 at selected a-priori SNRs: typical gamma, and an unusually small gamma."""
+    low = 0.01
+    lines = [
+        "| xi (dB) | G2 | G3 at gamma = 1 + xi | G3_raw at gamma = "
+        f"{low:g} | G3 at gamma = {low:g} (clipped) |",
+        "|---|---|---|---|---|",
+    ]
+    for xi_db in (-10.0, 0.0, 5.0, 10.0, 20.0):
+        xi = 10.0 ** (xi_db / 10.0)
+        lines.append(
+            f"| {xi_db:.0f} | {float(wiener_gain(xi, cfg.g_min)):.3f} "
+            f"| {float(lsa_gain(xi, 1.0 + xi, cfg.g_min)):.3f} "
+            f"| {float(lsa_gain_raw(xi, low)):.2f} "
+            f"| {float(lsa_gain(xi, low, cfg.g_min)):.3f} |"
+        )
+    return "\n".join(lines)
+
+
+def _noise_only_table(cfg: Config) -> tuple[str, dict[str, float]]:
+    """Behaviour of every rule on pure noise with an exact noise PSD (no tracker involved)."""
+    rng = np.random.default_rng(NOISE_ONLY_SEED)
+    power = rng.exponential(1.0, (NOISE_ONLY_FRAMES, NOISE_ONLY_BINS))
+    lam = np.ones_like(power)
+    labels = {
+        "subtraction": f"G1 (a = {cfg.ss_a:g})",
+        "wiener": "G2, decision-directed",
+        "lsa": "G3, decision-directed",
+        "ml_wiener": "B4 (instantaneous xi)",
+    }
+    lines = [
+        "| Rule | Mean gain | Cells above 2 g_min |",
+        "|---|---|---|",
+    ]
+    escaped: dict[str, float] = {}
+    for rule in RULES:
+        gains = compute_gains(power, lam, rule, cfg, gain_mu=0.0)[NOISE_ONLY_SKIP:]
+        escaped[rule] = float(np.mean(gains > 2.0 * cfg.g_min))
+        lines.append(
+            f"| {labels[rule]} | {float(np.mean(gains)):.3f} | {100.0 * escaped[rule]:.1f} % |"
+        )
+    return "\n".join(lines), escaped
+
+
 def build_values(cfg: Config = DEFAULT) -> dict[str, str]:
     """Every number that appears in THEORY.md, as a display string."""
     sine = window_metrics(sqrt_hann(cfg.frame_len))
@@ -99,6 +158,8 @@ def build_values(cfg: Config = DEFAULT) -> dict[str, str]:
         cfg.n_bins, alpha_s=cfg.ms_alpha_s, n_sub=cfg.ms_n_sub, sub_frames=cfg.ms_sub_frames
     )
     step_table, step_down_ms = _step_table(cfg)
+    noise_only_table, escaped = _noise_only_table(cfg)
+    escape_threshold = (cfg.ss_a / (1.0 - cfg.g_min)) ** 2
     v_example = xi_example / (1.0 + xi_example) * gamma_example
     lsa_example = xi_example / (1.0 + xi_example) * math.exp(0.5 * float(exp1(v_example)))
     return {
@@ -166,6 +227,23 @@ def build_values(cfg: Config = DEFAULT) -> dict[str, str]:
         "lsa_example_xi": f"{xi_example:.0f}",
         "lsa_example_gamma": f"{gamma_example}",
         "lsa_example_gain": f"{lsa_example:.2f}",
+        "ss_a": f"{cfg.ss_a:g}",
+        "g_min": f"{cfg.g_min:g}",
+        "g_min_db": f"{cfg.g_min_db:.0f}",
+        "gain_mu": f"{cfg.gain_mu:g}",
+        "gain_tau_ms": f"{cfg.gain_time_constant_ms:.0f}",
+        "gain_spike_pct": f"{100.0 * (1.0 - cfg.gain_mu):.0f}",
+        "ss_threshold_db": f"{10.0 * math.log10(escape_threshold):.1f}",
+        "ss_escape_pct": f"{100.0 * noise_only_floor_escape(cfg.ss_a, cfg.g_min):.2f}",
+        "ss_escape_a1_pct": f"{100.0 * noise_only_floor_escape(1.0, cfg.g_min):.1f}",
+        "gain_table": _gain_table(cfg),
+        "noise_only_table": noise_only_table,
+        "noise_only_frames": f"{NOISE_ONLY_FRAMES}",
+        "noise_only_bins": f"{NOISE_ONLY_BINS}",
+        "noise_only_skip": f"{NOISE_ONLY_SKIP}",
+        "ml_escape_pct": f"{100.0 * escaped['ml_wiener']:.0f}",
+        "dd_escape_pct": f"{100.0 * escaped['wiener']:.1f}",
+        "lsa_escape_pct": f"{100.0 * escaped['lsa']:.0f}",
     }
 
 
