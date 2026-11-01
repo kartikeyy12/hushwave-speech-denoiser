@@ -339,13 +339,40 @@ B1, B4 and B5 share the STFT, the noise tracker and the synthesis, so difference
 
 B4 equals power spectral subtraction: for gamma > 1, xi = gamma - 1 gives G2 = (gamma - 1) / gamma = 1 - 1/gamma, which is the power-domain subtraction gain with a = 1. It is therefore a meaningful "no decision-directed smoothing" control, not an independent method.
 
-## 8. Test-signal mixing: exact definition
+## 8. Test-signal mixing and metrics
+
+### 8.1 Mixing: exact definition
 
 Given clean x (length L samples), noise segment d of the same length, and target SNR s dB:
 
 g = sqrt( mean(x^2) / ( mean(d^2) * 10^(s/10) ) ), y = x + g d.
 
 Then 10 log10( sum x^2 / sum (g d)^2 ) = s exactly, by construction. Power is averaged over the whole utterance, with no voice-activity detector, so pauses lower the "speech power". That is a deliberate choice for reproducibility, and it is stated in the report. Tests use synthetic cases with known answers (M3, M7).
+
+### 8.2 Metrics (`metrics.py`)
+
+All metrics compare an enhanced (or noisy) signal with the clean reference of the same length and alignment. Everything except PESQ-WB and STOI is implemented here from its definition and tested against cases with known answers.
+
+**Segments.** The clean reference is cut into non-overlapping blocks of @@block_samples@@ samples (@@block_ms@@ ms). A block is speech-active when its mean square is within @@activity_db@@ dB of the loudest block; every other block is noise-only. This is a relative threshold on the clean signal, with no voice-activity detector and no hangover. M8 prints the fraction of active blocks per utterance so the threshold can be sanity-checked on real data; it is a parameter (`activity_db`), not a constant of nature.
+
+| Metric | Definition | Where it looks |
+|---|---|---|
+| SNR | 10 log10( sum x^2 / sum (e - x)^2 ), x clean, e estimate; +infinity for an exact estimate | whole signal |
+| Delta SNR | SNR(enhanced) - SNR(noisy) | whole signal |
+| Segmental SNR | mean of per-block SNR, each clamped to [@@seg_snr_min@@, @@seg_snr_max@@] dB | speech-active blocks |
+| Log-spectral distance | per frame sqrt( mean over bins of (10 log10 P_x - 10 log10 P_e)^2 ), powers floored @@lsd_floor_db@@ dB below the loudest clean bin, averaged over frames | frames that touch a speech-active block |
+| Noise reduction | 10 log10( sum noisy^2 / sum enhanced^2 ) | noise-only blocks |
+| Speech distortion | 10 log10( sum (s' - s)^2 / sum s^2 ); lower is better | speech-active blocks |
+| Musical-noise indicator | kurtosis ratio, below | STFT frames entirely in noise-only blocks |
+| PESQ-WB, STOI | external packages `pesq`, `pystoi` | whole signal |
+
+**Speech distortion by shadow filtering.** The output of a gain-based system is G applied to the noisy STFT. Because the STFT, the high-pass filter and the gain multiplication are linear, applying the same gains to the clean speech and to the noise separately gives a speech component s' and a residual-noise component whose sum is the output (`gain_components`; a test checks this to 1e-12). Speech distortion compares s' with the clean speech s, so it measures what the system did to the speech alone, with no residual noise mixed in. It is only defined for systems that work by applying gains (B1, B4, B5 and their ablations); for B2 and B3 it is reported as not available. It includes the effect of the high-pass pre-filter on speech below the cut-off, which is part of what the system does to the speech.
+
+**Musical-noise indicator.** For each frequency bin, take the kurtosis of the power over time, mean(P^2) / mean(P)^2, over STFT frames that lie entirely in noise-only blocks (at least @@min_noise_frames@@ of them, otherwise the indicator is not available). The indicator is the mean over bins of the kurtosis of the enhanced signal divided by that of the noisy signal, in the spirit of the kurtosis ratio of Uemura et al. Gaussian noise has power kurtosis 2, so 1 means the residual is no more peaky than the input and a value well above 1 means isolated surviving spectral peaks, which is what musical noise sounds like. Tests check three known cases: unchanged or uniformly scaled noise gives exactly 1, and randomly surviving isolated cells give a large value.
+
+**How to read them together.** Noise reduction looks only at noise-only blocks, and segmental SNR, speech distortion and the log-spectral distance only at speech-active ones. A system that mutes everything has excellent noise reduction and terrible speech distortion; a system that does nothing has zero everywhere. No single number is the result.
+
+**External metrics.** PESQ-WB (ITU-T P.862.2 as implemented by the `pesq` package) needs exactly 16 kHz, at least a quarter of a second of audio, and is not defined for silence (reported as not available). STOI is computed by `pystoi`, which works at 10 kHz internally; when `pystoi` finds too few speech frames it returns 1e-5 with a warning, which we turn into not available instead of letting it into an average. Both are reported with their package versions and labelled external. They are widely used predictors of quality and intelligibility, not measurements of either, and were designed for other kinds of processing than ours.
 
 ## 9. Known weak points identified so far
 
@@ -355,6 +382,8 @@ Then 10 log10( sum x^2 / sum (g d)^2 ) = s exactly, by construction. Power is av
 - G3 passes more residual noise cells than G2 (section 7.5), and cepstral smoothing of xi, which targets exactly that, is not implemented.
 - The decision-directed recursion reacts to speech onsets with a lag (section 7.2). The tracker and the recursion share start-up weaknesses: until they have settled, speech present from the first frame is attenuated.
 - The constant stream delay is the worst case, N - 1 samples, not the best case; a variable-delay interface would save up to half of it at the cost of irregular output blocks (section 4.5).
+- The speech-activity threshold (@@activity_db@@ dB below the loudest block) is a relative rule with no hangover, so low-level fricatives and breath can fall on either side of it. It decides which blocks count for noise reduction and for speech distortion.
+- Speech distortion by shadow filtering exists only for gain-based systems, so B2 and B3 cannot be compared on it. PESQ and STOI are external, not verified by us beyond sanity checks, and are not valid substitutes for listening.
 - The Gaussian, independent-cell model is approximate. Strongly tonal or highly non-stationary noise breaks it.
 - Intrusive metrics (PESQ, STOI) need a clean reference. Our own recordings have none, so they get non-intrusive treatment only, kept separate.
 

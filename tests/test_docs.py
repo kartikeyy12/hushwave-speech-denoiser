@@ -67,3 +67,13 @@ def test_gain_tables_have_the_expected_rows() -> None:
     noise_rows = values["noise_only_table"].splitlines()
     assert len(noise_rows) == 2 + 4
     assert values["lsa_escape_pct"] != values["dd_escape_pct"]
+
+
+def test_metric_values_in_the_docs_come_from_the_code() -> None:
+    values = build_values()
+    assert values["activity_db"] == "40"
+    assert values["block_samples"] == "256"
+    assert values["block_ms"] == "16"
+    assert (values["seg_snr_min"], values["seg_snr_max"]) == ("-10", "35")
+    assert values["lsd_floor_db"] == "100"
+    assert values["min_noise_frames"] == "20"

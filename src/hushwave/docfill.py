@@ -23,6 +23,7 @@ from hushwave.gains import (
     noise_only_floor_escape,
     wiener_gain,
 )
+from hushwave.metrics import LSD_FLOOR_DB, MIN_NOISE_FRAMES, SEG_SNR_MAX_DB, SEG_SNR_MIN_DB
 from hushwave.noise_est import (
     KINDS,
     McraEstimator,
@@ -227,6 +228,13 @@ def build_values(cfg: Config = DEFAULT) -> dict[str, str]:
         "lsa_example_xi": f"{xi_example:.0f}",
         "lsa_example_gamma": f"{gamma_example}",
         "lsa_example_gain": f"{lsa_example:.2f}",
+        "activity_db": f"{cfg.activity_db:.0f}",
+        "block_ms": f"{cfg.hop_ms:.0f}",
+        "block_samples": f"{cfg.hop}",
+        "seg_snr_min": f"{SEG_SNR_MIN_DB:.0f}",
+        "seg_snr_max": f"{SEG_SNR_MAX_DB:.0f}",
+        "lsd_floor_db": f"{-LSD_FLOOR_DB:.0f}",
+        "min_noise_frames": f"{MIN_NOISE_FRAMES}",
         "ss_a": f"{cfg.ss_a:g}",
         "g_min": f"{cfg.g_min:g}",
         "g_min_db": f"{cfg.g_min_db:.0f}",
