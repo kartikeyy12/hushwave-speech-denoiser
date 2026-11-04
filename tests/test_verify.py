@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import subprocess
 import sys
@@ -50,8 +51,26 @@ def test_results_file_states(tmp_path: Path) -> None:
     assert verify.check_results_file(tmp_path).status == "FAIL"
     target.write_text('{"a": 1}', encoding="utf-8")
     outcome = verify.check_results_file(tmp_path)
-    assert outcome.status == "PASS"
-    assert "1 top-level" in outcome.detail
+    assert outcome.status == "FAIL" and "schema_version" in outcome.detail
+    systems = [{"name": n} for n in ("B0", "B1", "B2", "B3", "B4", "B5")]
+    cell = {"delta_snr_db": {"mean": 1.0}}
+    valid = {
+        "schema_version": 2,
+        "meta": {"complete": False},
+        "tuning": {},
+        "protocol": {"test_evaluations": 1},
+        "test": {
+            "systems": systems,
+            "primary_corpus": "libri",
+            "tables": {"libri": {"overall": {s["name"]: cell for s in systems}}},
+        },
+    }
+    target.write_text(json.dumps(valid), encoding="utf-8")
+    outcome = verify.check_results_file(tmp_path)
+    assert outcome.status == "PASS" and "INCOMPLETE" in outcome.detail
+    valid["meta"] = {"complete": True}
+    target.write_text(json.dumps(valid), encoding="utf-8")
+    assert "INCOMPLETE" not in verify.check_results_file(tmp_path).detail
 
 
 def test_coverage_threshold_actually_fails_the_gate(tmp_path: Path) -> None:

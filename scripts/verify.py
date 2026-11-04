@@ -39,11 +39,13 @@ def run_gate(name: str, command: list[str]) -> Outcome:
 
 
 def check_results_file(root: Path = ROOT) -> Outcome:
-    """The results file is created in M8; once present it must be a JSON object."""
+    """results/results.json (milestone M8) must parse and satisfy the results schema."""
+    from hushwave.pipeline import validate_results
+
     path = root / "results" / "results.json"
     if not path.exists():
         return Outcome(
-            "results schema", "N/A", "results/results.json is created in milestone M8", ""
+            "results schema", "N/A", "results/results.json is created by `make experiments`", ""
         )
     try:
         parsed = json.loads(path.read_text(encoding="utf-8"))
@@ -51,7 +53,14 @@ def check_results_file(root: Path = ROOT) -> Outcome:
         return Outcome("results schema", "FAIL", f"cannot parse results.json: {error}", "")
     if not isinstance(parsed, dict):
         return Outcome("results schema", "FAIL", "results.json is not a JSON object", "")
-    return Outcome("results schema", "PASS", f"{len(parsed)} top-level keys", "")
+    problems = validate_results(parsed)
+    if problems:
+        return Outcome("results schema", "FAIL", problems[0], "\n".join(problems))
+    evaluations = parsed["protocol"]["test_evaluations"]
+    detail = f"valid; TEST evaluated {evaluations}x"
+    if not parsed["meta"].get("complete", False):
+        detail += "; INCOMPLETE data (dry run, not the final result)"
+    return Outcome("results schema", "PASS", detail, "")
 
 
 def check_manifest(root: Path = ROOT) -> Outcome:

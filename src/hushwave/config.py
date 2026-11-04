@@ -34,6 +34,8 @@ class Config:
     g_min: float = 0.1
     gain_mu: float = 0.5
     activity_db: float = 40.0
+    rise_db_per_s: float = 0.0
+    spectral_hp: bool = False
 
     def __post_init__(self) -> None:
         if self.fs <= 0:
@@ -63,6 +65,8 @@ class Config:
             raise ValueError("gain_mu must lie in [0, 1)")
         if self.activity_db <= 0.0:
             raise ValueError("activity_db must be positive")
+        if self.rise_db_per_s < 0.0:
+            raise ValueError("rise_db_per_s must be non-negative (0 disables the limiter)")
         if self.noise_floor <= 0.0:
             raise ValueError("noise_floor must be positive")
 

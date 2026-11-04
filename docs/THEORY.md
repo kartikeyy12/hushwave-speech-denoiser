@@ -13,6 +13,9 @@ All citations are marked **verify before submission**.
 5. **Bias constants are calibrated, not copied.** Section 6 explains why the minimum-statistics bias factor is computed by simulation in M4 for our exact smoothing constants.
 6. **Baseline B4 is power spectral subtraction in disguise.** A Wiener gain driven by the instantaneous estimate xi = max(gamma - 1, 0) equals 1 - 1/gamma for gamma > 1 (section 7.6). It is kept as the "no decision-directed smoothing" control, and described honestly as that.
 7. **The decision-directed recursion starts from zero previous SNR and has no separate floor on xi.** Section 7.5 gives the reasons.
+8. **Two options were added to the engine in M8 because DEV data asked for them.** A zero-phase spectral high-pass (section 7.7) and a rise-rate limit on the noise estimate (section 6.5). Both are off by default and the DEV tuning decides whether the final system uses them; the evidence for adding them (a rehearsal on the first half of the group's own recordings) is described in section 8.3, and the second half stayed untouched.
+9. **The unit of analysis is the utterance, not the mixture.** Every utterance appears in many mixtures, so mixtures are not independent; confidence intervals and tests use per-utterance means (section 8.3).
+10. **An own-voice corpus is added next to LibriSpeech and reported separately.** One speaker, one microphone: it shows behaviour on real recording conditions, it does not support claims about speakers in general.
 
 ## 1. Problem and signal model
 
@@ -180,6 +183,8 @@ Purpose: remove DC and rumble, which carry no speech information. It does not re
 
 Implementation is checked against `scipy.signal.butter` and `lfilter` in M2.
 
+**Phase.** A causal IIR filter also shifts phase. The biquad's phase is 72 degrees at 100 Hz, 34 degrees at 200 Hz and 22 degrees at 300 Hz, which is where the fundamental and first harmonics of voiced speech lie. Waveform metrics compare the output with the unfiltered clean reference, so a tone at 200 Hz that is only phase-shifted already has an error energy of 2 - 2 cos(phase) = -4.7 dB relative to its own energy. A listener cannot hear this, but the waveform SNR can, and at high input SNR (little noise left to remove) it can outweigh the rumble the filter removes. Section 7.7 gives a zero-phase alternative with the same magnitude response; the M8 ablation measures both.
+
 ## 6. Noise PSD estimation
 
 Notation: P(n,k) is a recursively smoothed periodogram, P(n,k) = a_s P(n-1,k) + (1 - a_s) |Y(n,k)|^2.
@@ -229,6 +234,14 @@ Noise power jumps by the stated amount; the table gives the frames (and millisec
 | MCRA | 47 frames (752 ms) | 94 frames (1504 ms) | 22 frames (352 ms) |
 
 Both trackers need roughly one window to follow a rise in noise, because the old, lower values must leave the minimum window (MCRA is faster for small rises). Falls are followed in about 352 ms. After the start-up transient both estimators stay within a few percent of the true level on stationary noise (tests in `tests/test_noise_est.py`, tolerance 5 %).
+
+### 6.5 Rise-rate limiting (optional, `noise_est.RiseLimitedEstimator`)
+
+A windowed minimum only sees noise if a pause of some length occurs inside the window. Continuous read speech has few pauses as long as the window (1.536 s). When the last pause slides out, the minimum jumps up to the level of the speech valleys, and the gain rule then treats weak speech as noise. The limiter wraps either tracker and lets the estimate fall at once but rise only slowly:
+
+out(n) = min( est(n), out(n - 1) rho ), rho = 10^(r hop / (10 fs)),
+
+with r the maximum rise in dB per second. For r = 3 dB/s this is 0.048 dB per frame (rho = 1.01111), and following a genuine rise of 10 dB takes at least 3.3 s. The jump becomes a ramp, at the price of a slow reaction to a real rise of the noise; DEV decides r (r = 0 switches the limiter off, which is the default). The bias factors of section 6.2 are calibrated without the limiter; `tests/test_m8_options.py` checks that on stationary noise the limited estimate stays within 1 dB of the unlimited one.
 
 ## 7. Gain rules
 
@@ -315,8 +328,10 @@ A musical-noise indicator metric is defined in M7.
 | g_min | 0.1 (-20 dB) | gain floor for every rule |
 | mu | 0.5 | temporal gain smoothing (section 7.4) |
 | alpha | 0.98 | decision-directed memory (section 7.2) |
+| spectral_hp | off | zero-phase spectral high-pass on the gains (section 7.7) |
+| rise_db_per_s | off | limit on how fast the noise estimate may rise (section 6.5) |
 
-All four are starting values. M8 tunes them on DEV only and reports the TEST result once.
+All are starting values. M8 tunes them on DEV only (section 8.3) and reports the TEST result once; `results/tuning.json` records the choice.
 
 - **Floor and clip.** Every rule returns G in [g_min, 1]. G3_raw is clipped at 1 (section 7.3) and then floored.
 - **What the recursion feeds back.** The previous cleaned amplitude is the rule's gain after the floor and before temporal smoothing, times |Y|. The smoother is a pure output stage and cannot change how xi evolves.
@@ -356,11 +371,25 @@ Reading: the instantaneous Wiener rule (B4) lets 28 % of noise-only cells rise a
 | B2 | `scipy.signal.wiener`, 15-sample window | time-domain local-statistics Wiener filter, untuned, third-party |
 | B3 | `noisereduce`, non-stationary mode | independent third-party spectral gating; optional install |
 | B4 | Wiener gain, xi = max(gamma - 1, 0), mu = 0 | no decision-directed smoothing |
-| B5 | full HushWave | built in M6 on the streaming engine |
+| B5 | full HushWave | gain rule, tracker, pre-filter and rise limit chosen on DEV (section 8.3); runs on the streaming engine of M6 |
 
-B1, B4 and B5 share the STFT, the noise tracker and the synthesis, so differences between them come from the gain rule alone. B2 and B3 are different algorithms entirely and are reported as such.
+B1, B4 and B5 share the STFT, the noise tracker, the pre-filter, the rise limit and the synthesis (those of B5), so differences between them come from the gain rule and its own tuned parameters alone. B2 and B3 are different algorithms entirely and are reported as such.
 
 B4 equals power spectral subtraction: for gamma > 1, xi = gamma - 1 gives G2 = (gamma - 1) / gamma = 1 - 1/gamma, which is the power-domain subtraction gain with a = 1. It is therefore a meaningful "no decision-directed smoothing" control, not an independent method.
+
+### 7.7 Zero-phase spectral high-pass (optional, `gains.spectral_highpass_mask`)
+
+The pipeline already works on STFT frames, so the high-pass of section 5 can be applied there as a real, positive gain per bin instead of a causal filter. The mask has exactly the magnitude of the biquad at the bin centres, |H(f_k)| = 1 / sqrt(1 + (tan(pi fc / fs) / tan(pi f_k / fs))^4) with f_k = k fs / N, DC set to 0 and Nyquist to 1. A real gain has no phase, so a tone passes without the phase error of section 5, and since it acts on frames the engine gets no extra delay. It multiplies the final gain after the decision-directed recursion and the temporal smoothing, so it does not feed back into either (section 7.5). `tests/test_m8_options.py` checks the match with the biquad to 1e-9 relative, and that streaming equals batch with the mask on.
+
+| bin | frequency (Hz) | mask (dB) | biquad magnitude (dB) |
+|---|---|---|---|
+| 1 | 31.25 | -16.43 | -16.43 |
+| 2 | 62.50 | -5.66 | -5.66 |
+| 3 | 93.75 | -1.85 | -1.85 |
+| 4 | 125.00 | -0.67 | -0.67 |
+| 5 | 156.25 | -0.29 | -0.29 |
+
+Limits: the bins are 31.25 Hz apart and the main lobe of the sqrt-Hann window is 93.8 Hz wide, so the cut-off is only as sharp as the frame allows: energy at 20 to 60 Hz is attenuated mostly by the gain at the neighbouring bins. It does not remove mains hum either (section 5).
 
 ## 8. Test-signal mixing and metrics
 
@@ -397,6 +426,24 @@ All metrics compare an enhanced (or noisy) signal with the clean reference of th
 
 **External metrics.** PESQ-WB (ITU-T P.862.2 as implemented by the `pesq` package) needs exactly 16 kHz, at least a quarter of a second of audio, and is not defined for silence (reported as not available). STOI is computed by `pystoi`, which works at 10 kHz internally; when `pystoi` finds too few speech frames it returns 1e-5 with a warning, which we turn into not available instead of letting it into an average. Both are reported with their package versions and labelled external. They are widely used predictors of quality and intelligibility, not measurements of either, and were designed for other kinds of processing than ours.
 
+### 8.3 Experimental protocol (`corpus.py`, `tuning.py`, `experiments.py`, `aggregate.py`, `pipeline.py`)
+
+**Data.** Speech: `libri` (LibriSpeech, speaker-disjoint DEV and TEST from `results/split_manifest.json`) and `own` (the group's own voice). The own-voice recording is split in time: its first half is cut into DEV segments and its second half into TEST segments of 3 to 8 s, each cut at the quietest point, dropping pieces with fewer than 30 % speech-active blocks. Noise: 6 synthetic kinds (white, pink, hum, babble, am, transient), the DEMAND categories of the manifest and the group's own fan and corridor recordings; DEMAND and the recordings are split in time (first half DEV, second half TEST), and babble is the sum of 4 other utterances of the same split (for the own voice these are other segments of the same speaker, a weaker babble). Input SNR grid (dB): -5, 0, 5, 10, 15. A case is an utterance, a noise and an SNR; its random seed is a CRC32 of that identity, so results do not depend on run order or on the number of processes.
+
+**Cold start.** Every utterance is processed on its own, with the estimator state empty and no noise-only lead-in. A deployed system would have been running for a while; short utterances here include the start-up transient of section 9.
+
+**Tuning on DEV only.** Objective J = mean over DEV tuning cases of (delta SNR + delta segmental SNR) / 2, in dB. PESQ and STOI are kept out of the objective so that they stay independent indicators. Tuning cases are 4 per (noise, SNR) cell, spread over the utterances. Procedure: (1) 24 structures (gain rule, tracker, pre-filter, rise limit on or off) at default parameters; (2) a full factorial grid over the gain parameters on the structure winner: g_min in {0.1, 0.03, 0.05, 0.2}; gain_mu in {0.5, 0, 0.3, 0.7}; dd_alpha in {0.98, 0.95, 0.9, 0.8} (64 combinations); (3) one-at-a-time sweeps of the rise limit, the tracker parameter and the alternative gain rule around the grid winner, and their combination if it is better; (4) B1, B2 and B4 get a sweep of their own parameters on the pipeline of B5, B3 runs with library defaults. The first version of step 2 used one-at-a-time sweeps; a rehearsal on DEV showed them missing a better setting because g_min and gain_mu interact (a high floor looks best only while smoothing is on), so the grid is factorial. Ties go to the default.
+
+**TEST once.** The frozen settings are written to `results/tuning.json`. The test stage refuses to run again on the same file; every TEST evaluation is logged in `results.json` under `protocol.test_history` with the hash of the settings it used, so "evaluated once" can be read off the result.
+
+**Statistics.** The unit of analysis is the utterance: per-case values are averaged within each utterance, the mean over utterances gets a percentile-bootstrap interval (2000 resamples of the utterances, fixed seed), and B5 is compared with each baseline by a two-sided Wilcoxon signed-rank test on the per-utterance means (`scipy.stats.wilcoxon`, external reference), Holm-corrected at alpha = 0.05 over all tests of a corpus. A case-level p-value is also stored but is optimistic, because cases share utterances. With few utterances the smallest attainable p-value is large, so the single-speaker `own` corpus (a handful of segments) cannot reach significance after correction; this is a property of the sample, not evidence of no difference.
+
+**Ablation.** One component of B5 is changed at a time (gain rule, tracker, pre-filter mode, rise limit, gain smoothing, decision-directed memory, gain floor, frame length). PESQ and STOI are computed for B0 to B5 only; ablations report the cheap metrics. The frame-length variants keep every duration fixed (`systems.config_for_frame_ms`): the minimum window stays about as long, and every smoothing constant a becomes a^(hop / reference hop), which keeps its time constant in seconds. Metrics always use the reference block size, so they are comparable across variants.
+
+**Real recordings without a clean reference** (`nonintrusive.py`). SNR, PESQ and STOI are undefined. A block of one hop is a pause when its energy is at most the 95th percentile of the block energies of the matching noise-only recording plus 1 dB, and speech when it exceeds that floor by 10 dB. Reported: noise reduction and residual level on pauses, musical-noise ratio on pauses, the change of speech-block energy (near 0 dB means the level is kept), and the Welch PSD of the pauses (own implementation, nperseg = 512, pause runs of at least 64 ms) before and after, next to the noise-only recording.
+
+**What the first rehearsal showed (DEV half of the own recordings only).** With an exact noise PSD the gain rules improve the waveform SNR clearly, but with the trackers' estimates the improvement vanished at high input SNR. The causes were found separately: the causal high-pass costs waveform SNR through its phase (section 5), and the minimum trackers overestimate the noise in the band of the voice when speech is continuous (section 6.5). Those two findings are why the options of sections 6.5 and 7.7 exist.
+
 ## 9. Known weak points identified so far
 
 - Start-up: with no initial silence the estimate is too high while speech is present from the first frame, until a pause has passed through the minimum window. The synthetic test in M4 (speech from sample 0, 0.6 s on, 1.0 s off) settles within +4 / -1 dB after five seconds.
@@ -407,6 +454,10 @@ All metrics compare an enhanced (or noisy) signal with the clean reference of th
 - The constant stream delay is the worst case, N - 1 samples, not the best case; a variable-delay interface would save up to half of it at the cost of irregular output blocks (section 4.5).
 - The speech-activity threshold (40 dB below the loudest block) is a relative rule with no hangover, so low-level fricatives and breath can fall on either side of it. It decides which blocks count for noise reduction and for speech distortion.
 - Speech distortion by shadow filtering exists only for gain-based systems, so B2 and B3 cannot be compared on it. PESQ and STOI are external, not verified by us beyond sanity checks, and are not valid substitutes for listening.
+- Continuous speech: minimum-based trackers over-estimate the noise in the speech band when no pause as long as the window occurs (section 6.5). The rise limit reduces the damage, it does not remove it, and it slows the reaction to a genuine rise of the noise.
+- Waveform metrics are phase-sensitive (section 5). Whether a zero-phase or causal high-pass looks better in delta SNR says nothing about audibility; PESQ, STOI and the non-intrusive measures are reported alongside.
+- The tuning objective is waveform-based (section 8.3). It rewards protecting the speech and is blind to residual noise in the pauses, so it can select gentle suppression; the independent indicators may rank systems differently, and both views are reported, not merged.
+- Evaluation is cold start and short utterances (section 8.3); the own-voice corpus is one speaker on one microphone, and the corridor recording was made with a different device and settings than the fan and quiet-speech recordings (see `docs/RECORDING_PROTOCOL.md`).
 - The Gaussian, independent-cell model is approximate. Strongly tonal or highly non-stationary noise breaks it.
 - Intrusive metrics (PESQ, STOI) need a clean reference. Our own recordings have none, so they get non-intrusive treatment only, kept separate.
 
@@ -424,3 +475,7 @@ All metrics compare an enhanced (or noisy) signal with the clean reference of th
 - J. Princen, A. Bradley, "Analysis/synthesis filter bank design based on time domain aliasing cancellation," IEEE Trans. ASSP, 1986.
 - C. H. Taal, R. C. Hendriks, R. Heusdens, J. Jensen, "An algorithm for intelligibility prediction of time-frequency weighted noisy speech," IEEE Trans. Audio, Speech, Language Processing, 2011.
 - ITU-T Recommendation P.862.2, wideband extension to PESQ, 2007.
+- E. Doblinger, "Computationally efficient speech enhancement by spectral minima tracking in subbands," EUROSPEECH, 1995 (continuous minimum tracking with a limited rise, the idea behind section 6.5).
+- F. Wilcoxon, "Individual comparisons by ranking methods," Biometrics Bulletin, 1945.
+- S. Holm, "A simple sequentially rejective multiple test procedure," Scandinavian Journal of Statistics, 1979.
+- B. Efron, "Bootstrap methods: another look at the jackknife," Annals of Statistics, 1979.

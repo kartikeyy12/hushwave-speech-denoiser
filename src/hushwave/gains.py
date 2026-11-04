@@ -44,6 +44,28 @@ def _as_float_array(value: ArrayLike, name: str) -> FloatArray:
     return data
 
 
+def spectral_highpass_mask(n_bins: int, cutoff_hz: float, fs: float) -> FloatArray:
+    """Zero-phase high-pass as a real per-bin gain (THEORY 7.7).
+
+    The magnitude is that of the project's 2nd-order Butterworth biquad (bilinear transform),
+    |H(f)| = 1 / sqrt(1 + (tan(pi fc / fs) / tan(pi f / fs))^4), sampled at the bin centres
+    f_k = k fs / N with N = 2 (n_bins - 1). The DC bin gets 0 and the Nyquist bin 1. A real,
+    positive gain has no phase, so unlike the causal biquad it does not shift the low harmonics
+    of the voice against the unfiltered clean reference.
+    """
+    if n_bins < 2:
+        raise ValueError("n_bins must be at least 2")
+    if not 0.0 < cutoff_hz < fs / 2:
+        raise ValueError("cutoff_hz must lie strictly between 0 and Nyquist")
+    freqs = np.arange(n_bins, dtype=np.float64) * fs / (2 * (n_bins - 1))
+    mask = np.ones(n_bins)
+    mask[0] = 0.0
+    inner = slice(1, n_bins - 1)
+    ratio = np.tan(np.pi * cutoff_hz / fs) / np.tan(np.pi * freqs[inner] / fs)
+    mask[inner] = 1.0 / np.sqrt(1.0 + ratio**4)
+    return mask
+
+
 def subtraction_gain(gamma: ArrayLike, a: float, g_min: float) -> FloatArray:
     """G1 = max(1 - a / sqrt(gamma), g_min); gamma = 0 maps to the floor."""
     snr = _as_float_array(gamma, "gamma")
@@ -122,7 +144,7 @@ class GainStage:
             raise ValueError(f"unknown gain rule {rule!r}; choose from {RULES}")
         if n_bins < 1:
             raise ValueError("n_bins must be at least 1")
-        unknown = set(overrides) - {"ss_a", "g_min", "gain_mu", "dd_alpha"}
+        unknown = set(overrides) - {"ss_a", "g_min", "gain_mu", "dd_alpha", "spectral_hp"}
         if unknown:
             raise ValueError(f"unknown gain parameters: {', '.join(sorted(unknown))}")
         params = {
@@ -130,6 +152,7 @@ class GainStage:
             "g_min": cfg.g_min,
             "gain_mu": cfg.gain_mu,
             "dd_alpha": cfg.dd_alpha,
+            "spectral_hp": 1.0 if cfg.spectral_hp else 0.0,
         }
         params.update(overrides)
         if params["ss_a"] < 1.0:
@@ -146,6 +169,9 @@ class GainStage:
         self.g_min = float(params["g_min"])
         self.mu = float(params["gain_mu"])
         self.alpha = float(params["dd_alpha"])
+        self._hp_mask: FloatArray | None = None
+        if params["spectral_hp"] >= 0.5:
+            self._hp_mask = spectral_highpass_mask(n_bins, cfg.hp_cutoff_hz, cfg.fs)
         self.reset()
 
     def reset(self) -> None:
@@ -184,6 +210,8 @@ class GainStage:
             self._smoothed = raw
         else:
             self._smoothed = self.mu * self._smoothed + (1.0 - self.mu) * raw
+        if self._hp_mask is not None:
+            return np.asarray(self._smoothed * self._hp_mask, dtype=np.float64)
         return np.array(self._smoothed, dtype=np.float64)
 
 

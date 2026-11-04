@@ -22,6 +22,9 @@ data/*
 *.flac
 !examples/*.wav
 
+# Rehearsal output of `make experiments-quick` (not a result)
+results/quick/
+
 # Milestone zips delivered by the assistant
 hushwave_M*.zip
 

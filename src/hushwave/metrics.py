@@ -78,6 +78,15 @@ def _sample_mask(active: BoolArray, n_samples: int, block: int) -> BoolArray:
     return np.asarray(np.repeat(active, block)[:n_samples], dtype=np.bool_)
 
 
+def _check_blocks(flags: BoolArray, n_samples: int, cfg: Config) -> None:
+    expected = -(-n_samples // cfg.hop)
+    if flags.size != expected:
+        raise ValueError(
+            f"need one flag per block of {cfg.hop} samples ({expected} for this signal), "
+            f"got {flags.size}"
+        )
+
+
 def active_fraction(active: BoolArray) -> float:
     """Fraction of blocks that are speech-active."""
     return float(np.mean(active))
@@ -122,6 +131,27 @@ def segmental_snr_db(
 
 
 # --------------------------------------------------------------------------- noise and speech
+def noise_reduction_masked(
+    noisy: ArrayLike, enhanced: ArrayLike, quiet_blocks: BoolArray, cfg: Config = DEFAULT
+) -> float:
+    """Energy of the noisy signal over that of the enhanced one on the given noise-only blocks, dB.
+
+    ``quiet_blocks`` has one flag per block of ``cfg.hop`` samples. This form needs no clean
+    reference, so it also serves recordings whose pauses were found some other way.
+    """
+    y, z = _same_length(("noisy", noisy), ("enhanced", enhanced))
+    flags = np.asarray(quiet_blocks, dtype=np.bool_)
+    _check_blocks(flags, y.size, cfg)
+    quiet = _sample_mask(flags, y.size, cfg.hop)
+    if not np.any(quiet):
+        return math.nan
+    before = float(np.sum(y[quiet] ** 2))
+    after = max(float(np.sum(z[quiet] ** 2)), _TINY)
+    if before == 0.0:
+        return math.nan
+    return 10.0 * math.log10(before / after)
+
+
 def noise_reduction_db(
     clean: ArrayLike, noisy: ArrayLike, enhanced: ArrayLike, cfg: Config = DEFAULT
 ) -> float:
@@ -130,14 +160,7 @@ def noise_reduction_db(
     NaN when the reference has no noise-only block.
     """
     x, y, z = _same_length(("clean", clean), ("noisy", noisy), ("enhanced", enhanced))
-    quiet = ~_sample_mask(speech_activity(x, cfg), x.size, cfg.hop)
-    if not np.any(quiet):
-        return math.nan
-    before = float(np.sum(y[quiet] ** 2))
-    after = max(float(np.sum(z[quiet] ** 2)), _TINY)
-    if before == 0.0:
-        return math.nan
-    return 10.0 * math.log10(before / after)
+    return noise_reduction_masked(y, z, ~speech_activity(x, cfg), cfg)
 
 
 def speech_distortion_db(
@@ -187,23 +210,25 @@ def lsd_db(
     return float(np.mean(np.sqrt(np.mean(diff**2, axis=1))))
 
 
-def musical_noise_ratio(
-    clean: ArrayLike, noisy: ArrayLike, enhanced: ArrayLike, cfg: Config = DEFAULT
+def musical_noise_masked(
+    noisy: ArrayLike, enhanced: ArrayLike, noise_blocks: BoolArray, cfg: Config = DEFAULT
 ) -> float:
     """Kurtosis ratio of the noise-only power spectra, output over input (Uemura et al. style).
 
     For every frequency bin the kurtosis of the power over time is mean(P^2) / mean(P)^2, taken
-    over STFT frames that lie entirely in noise-only blocks. The indicator is the mean kurtosis of
-    the enhanced signal divided by that of the noisy signal. Gaussian noise has kurtosis 2, so
-    1 means "no more peaky than the input"; clearly above 1 means isolated surviving spectral
-    peaks, the cause of musical noise. NaN when fewer than MIN_NOISE_FRAMES frames qualify.
+    over STFT frames that lie entirely in noise-only blocks (``noise_blocks``, one flag per block
+    of ``cfg.hop`` samples). The indicator is the mean kurtosis of the enhanced signal divided by
+    that of the noisy signal. Gaussian noise has kurtosis 2, so 1 means "no more peaky than the
+    input"; clearly above 1 means isolated surviving spectral peaks, the cause of musical noise.
+    NaN when fewer than MIN_NOISE_FRAMES frames qualify.
     """
-    x, y, z = _same_length(("clean", clean), ("noisy", noisy), ("enhanced", enhanced))
-    active = speech_activity(x, cfg)
+    y, z = _same_length(("noisy", noisy), ("enhanced", enhanced))
+    flags = np.asarray(noise_blocks, dtype=np.bool_)
+    _check_blocks(flags, y.size, cfg)
     power_y = np.abs(stft(y, cfg.frame_len, cfg.hop)) ** 2
     power_z = np.abs(stft(z, cfg.frame_len, cfg.hop)) ** 2
-    blocks = _frame_blocks(power_y.shape[0], x.size, cfg)
-    keep = np.array([not bool(np.any(active[list(r)])) for r in blocks])
+    blocks = _frame_blocks(power_y.shape[0], y.size, cfg)
+    keep = np.array([bool(np.all(flags[list(r)])) for r in blocks])
     if int(keep.sum()) < MIN_NOISE_FRAMES:
         return math.nan
 
@@ -216,6 +241,14 @@ def musical_noise_ratio(
         return float(np.mean(second[valid] / mean[valid] ** 2))
 
     return kurtosis(power_z[keep]) / kurtosis(power_y[keep])
+
+
+def musical_noise_ratio(
+    clean: ArrayLike, noisy: ArrayLike, enhanced: ArrayLike, cfg: Config = DEFAULT
+) -> float:
+    """Kurtosis ratio on frames lying entirely in the noise-only blocks of the clean reference."""
+    x, y, z = _same_length(("clean", clean), ("noisy", noisy), ("enhanced", enhanced))
+    return musical_noise_masked(y, z, ~speech_activity(x, cfg), cfg)
 
 
 # --------------------------------------------------------------------------- external metrics

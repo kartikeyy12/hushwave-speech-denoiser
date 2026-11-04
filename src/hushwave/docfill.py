@@ -14,13 +14,23 @@ from pathlib import Path
 import numpy as np
 from scipy.special import exp1
 
+from hushwave.aggregate import BOOT
 from hushwave.config import DEFAULT, Config
+from hushwave.corpus import (
+    BABBLE_SOURCES,
+    OWN_MIN_ACTIVE,
+    OWN_SEGMENT_MAX_S,
+    OWN_SEGMENT_MIN_S,
+    SNR_GRID,
+)
+from hushwave.filters import frequency_response, highpass_biquad
 from hushwave.gains import (
     RULES,
     compute_gains,
     lsa_gain,
     lsa_gain_raw,
     noise_only_floor_escape,
+    spectral_highpass_mask,
     wiener_gain,
 )
 from hushwave.metrics import LSD_FLOOR_DB, MIN_NOISE_FRAMES, SEG_SNR_MAX_DB, SEG_SNR_MIN_DB
@@ -31,11 +41,28 @@ from hushwave.noise_est import (
     calibrated_bias_curve,
     measure_step_delay,
 )
+from hushwave.nonintrusive import (
+    FLOOR_PERCENTILE,
+    MIN_RUN_BLOCKS,
+    PAUSE_MARGIN_DB,
+    PSD_NPERSEG,
+    SPEECH_MARGIN_DB,
+)
+from hushwave.stats import ALPHA
+from hushwave.synth import NOISE_KINDS
+from hushwave.systems import PREFILTERS
 from hushwave.theory import (
     aliasing_experiment,
     butterworth_highpass_gain_db,
     quantization_sqnr_db,
 )
+from hushwave.tuning import (
+    DEFAULT_TUNING_PER_CELL,
+    ESTIMATORS,
+    GAIN_GRID,
+    RISE_RATES,
+)
+from hushwave.tuning import RULES as TUNING_RULES
 from hushwave.windows import hann_periodic, sqrt_hann, window_metrics
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -143,6 +170,17 @@ def _noise_only_table(cfg: Config) -> tuple[str, dict[str, float]]:
     return "\n".join(lines), escaped
 
 
+def _mask_table(cfg: Config, mask: np.ndarray) -> str:
+    """Zero-phase mask against the biquad magnitude at the first bin centres."""
+    b, a = highpass_biquad(cfg.hp_cutoff_hz, cfg.fs)
+    rows = ["| bin | frequency (Hz) | mask (dB) | biquad magnitude (dB) |", "|---|---|---|---|"]
+    for k in range(1, 6):
+        f = k * cfg.bin_hz
+        biquad = 20.0 * math.log10(abs(frequency_response(b, a, np.array([f]), cfg.fs)[0]))
+        rows.append(f"| {k} | {f:.2f} | {20.0 * math.log10(mask[k]):.2f} | {biquad:.2f} |")
+    return "\n".join(rows)
+
+
 def build_values(cfg: Config = DEFAULT) -> dict[str, str]:
     """Every number that appears in THEORY.md, as a display string."""
     sine = window_metrics(sqrt_hann(cfg.frame_len))
@@ -152,6 +190,21 @@ def build_values(cfg: Config = DEFAULT) -> dict[str, str]:
     def hp_gain(freq_hz: float) -> float:
         return butterworth_highpass_gain_db(freq_hz, cfg.hp_cutoff_hz, cfg.fs)
 
+    b_hp, a_hp = highpass_biquad(cfg.hp_cutoff_hz, cfg.fs)
+
+    def hp_phase_deg(freq_hz: float) -> float:
+        response = frequency_response(b_hp, a_hp, np.array([freq_hz]), cfg.fs)[0]
+        return float(np.degrees(np.angle(response)))
+
+    phase_200 = hp_phase_deg(200.0)
+    mask = spectral_highpass_mask(cfg.n_bins, cfg.hp_cutoff_hz, cfg.fs)
+    rise_rate = 3.0
+    n_structures = len(TUNING_RULES) * len(ESTIMATORS) * len(PREFILTERS) * len(RISE_RATES)
+    grid_size = int(np.prod([len(v) for v in GAIN_GRID.values()]))
+    grid_text = "; ".join(
+        f"{name} in {{{', '.join(f'{x:g}' for x in values)}}}" for name, values in GAIN_GRID.items()
+    )
+    phase_error_db = 10.0 * math.log10(2.0 - 2.0 * math.cos(math.radians(phase_200)))
     xi_example, gamma_example = 1.0, 0.01
     ms_estimator = MinStatsEstimator(cfg.n_bins)
     mcra_estimator = McraEstimator(cfg.n_bins)
@@ -209,6 +262,33 @@ def build_values(cfg: Config = DEFAULT) -> dict[str, str]:
         "hp_gain_cut_db": f"{hp_gain(cfg.hp_cutoff_hz):.2f}",
         "hp_gain_mains_db": f"{hp_gain(cfg.mains_hz):.1f}",
         "hp_gain_2mains_db": f"{hp_gain(2 * cfg.mains_hz):.1f}",
+        "hp_phase_100_deg": f"{hp_phase_deg(100.0):.0f}",
+        "hp_phase_200_deg": f"{phase_200:.0f}",
+        "hp_phase_300_deg": f"{hp_phase_deg(300.0):.0f}",
+        "hp_phase_err_200_db": f"{phase_error_db:.1f}",
+        "mask_table": _mask_table(cfg, mask),
+        "rise_rate_example": f"{rise_rate:g}",
+        "rise_db_per_frame": f"{rise_rate * cfg.hop / cfg.fs:.3f}",
+        "rise_ratio_per_frame": f"{10.0 ** (rise_rate * cfg.hop / cfg.fs / 10.0):.5f}",
+        "rise_time_10db_s": f"{10.0 / rise_rate:.1f}",
+        "snr_grid": ", ".join(f"{s:g}" for s in SNR_GRID),
+        "n_noise_kinds": f"{len(NOISE_KINDS)}",
+        "noise_kinds": ", ".join(NOISE_KINDS),
+        "babble_sources": f"{BABBLE_SOURCES}",
+        "own_seg_min_s": f"{OWN_SEGMENT_MIN_S:g}",
+        "own_seg_max_s": f"{OWN_SEGMENT_MAX_S:g}",
+        "own_min_active_pct": f"{100.0 * OWN_MIN_ACTIVE:.0f}",
+        "n_structures": f"{n_structures}",
+        "gain_grid_size": f"{grid_size}",
+        "gain_grid_text": grid_text,
+        "tuning_per_cell": f"{DEFAULT_TUNING_PER_CELL}",
+        "bootstrap_n": f"{BOOT}",
+        "alpha": f"{ALPHA:g}",
+        "floor_percentile": f"{FLOOR_PERCENTILE:.0f}",
+        "pause_margin_db": f"{PAUSE_MARGIN_DB:g}",
+        "speech_margin_db": f"{SPEECH_MARGIN_DB:g}",
+        "psd_nperseg": f"{PSD_NPERSEG}",
+        "min_pause_run_ms": f"{MIN_RUN_BLOCKS * cfg.hop_ms:.0f}",
         "sine_enbw_bins": f"{sine.enbw_bins:.4f}",
         "sine_null_bins": f"{sine.mainlobe_null_to_null_bins:.1f}",
         "sine_sidelobe_db": f"{sine.peak_sidelobe_db:.1f}",

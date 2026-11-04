@@ -229,10 +229,59 @@ class McraEstimator:
         )
 
 
+class RiseLimitedEstimator:
+    """Wrap a tracker so that its output may fall at once but rise only slowly (THEORY 6.5).
+
+    out(n) = min(inner(n), out(n - 1) * rho) with rho = 10^(rate * hop / 10) per frame for a
+    maximum rise of ``rise_db_per_s`` dB per second. A windowed minimum jumps up by the full
+    height of the speech valleys the moment the last pause slides out of its window; the limiter
+    turns that jump into a ramp, so a few seconds of uninterrupted speech cannot be mistaken for
+    a noise level increase. The price is a slow reaction to a genuine rise of the noise.
+    """
+
+    def __init__(
+        self, inner: MinStatsEstimator | McraEstimator, rise_db_per_s: float, hop_s: float
+    ) -> None:
+        if rise_db_per_s <= 0.0:
+            raise ValueError("rise_db_per_s must be positive")
+        if hop_s <= 0.0:
+            raise ValueError("hop_s must be positive")
+        self.n_bins = inner.n_bins
+        self.inner = inner
+        self.rise_db_per_s = rise_db_per_s
+        self.ratio = 10.0 ** (rise_db_per_s * hop_s / 10.0)
+        self._previous: FloatArray | None = None
+
+    @property
+    def bias(self) -> float:
+        """Bias factor of the wrapped tracker."""
+        return self.inner.bias
+
+    def reset(self) -> None:
+        self.inner.reset()
+        self._previous = None
+
+    def update(self, power: ArrayLike) -> FloatArray:
+        estimate = self.inner.update(power)
+        if self._previous is not None:
+            estimate = np.minimum(estimate, self._previous * self.ratio)
+        self._previous = np.asarray(estimate, dtype=np.float64)
+        return self._previous.copy()
+
+
 def make_estimator(
     kind: str, n_bins: int, cfg: Config = DEFAULT, **overrides: float
-) -> MinStatsEstimator | McraEstimator:
-    """Build an estimator of the given kind from the project configuration."""
+) -> MinStatsEstimator | McraEstimator | RiseLimitedEstimator:
+    """Build an estimator of the given kind from the project configuration.
+
+    ``rise_db_per_s`` (default ``cfg.rise_db_per_s``, 0 = off) adds the rise-rate limiter.
+    """
+    rise = float(overrides.get("rise_db_per_s", cfg.rise_db_per_s))
+    if rise > 0.0:
+        inner = make_estimator(kind, n_bins, cfg, **{**overrides, "rise_db_per_s": 0.0})
+        assert not isinstance(inner, RiseLimitedEstimator)
+        return RiseLimitedEstimator(inner, rise, cfg.hop / cfg.fs)
+    overrides = {k: v for k, v in overrides.items() if k != "rise_db_per_s"}
     if kind == "minstats":
         params = {
             "alpha_s": cfg.ms_alpha_s,

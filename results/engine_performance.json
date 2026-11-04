@@ -1,0 +1,44 @@
+{
+  "platform": {
+    "python": "3.11.18",
+    "numpy": "2.4.6",
+    "machine": "x86_64",
+    "system": "Linux"
+  },
+  "algorithmic_delay_samples": 511,
+  "algorithmic_delay_ms": 31.9375,
+  "measured_delay_samples": 511,
+  "per_sample_delay_range_samples": [
+    256,
+    511
+  ],
+  "streaming_vs_batch_max_abs_difference": 0.0,
+  "timing": [
+    {
+      "block": 128,
+      "real_time_factor": 0.02176813150011488,
+      "worst_block_ms": 0.42735199895105325,
+      "block_budget_ms": 8.0
+    },
+    {
+      "block": 256,
+      "real_time_factor": 0.020393859666607266,
+      "worst_block_ms": 0.562498997169314,
+      "block_budget_ms": 16.0
+    },
+    {
+      "block": 480,
+      "real_time_factor": 0.019262117667191585,
+      "worst_block_ms": 0.759093996748561,
+      "block_budget_ms": 30.0
+    },
+    {
+      "block": 1024,
+      "real_time_factor": 0.019148862333167926,
+      "worst_block_ms": 1.4115040030446835,
+      "block_budget_ms": 64.0
+    }
+  ],
+  "peak_heap_bytes_10s_stream": 104560,
+  "engine_buffer_bytes_after_construction": 8184
+}

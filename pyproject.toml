@@ -65,7 +65,7 @@ select = ["E", "F", "W", "I", "B", "UP", "N", "SIM"]
 
 [tool.mypy]
 strict = true
-mypy_path = "src"
+mypy_path = ["src", "tests"]
 files = ["src", "scripts", "tests"]
 explicit_package_bases = true
 

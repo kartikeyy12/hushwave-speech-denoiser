@@ -1,0 +1,2502 @@
+{
+  "schema_version": 2,
+  "profile": "full",
+  "objective": "J = mean over DEV tuning cases of (delta SNR + delta segSNR) / 2, dB",
+  "n_cases": 220,
+  "tuning_cases_per_cell": 4,
+  "scores": {
+    "B1": 4.651966467133479,
+    "B2": -0.29308130317393,
+    "B4": 4.402907373250716,
+    "B3": -2.479920009039043,
+    "B5": 5.0569103132474496
+  },
+  "strongest_baseline": "B1",
+  "final": {
+    "b5": {
+      "name": "B5",
+      "label": "HushWave (full)",
+      "kind": "gain",
+      "rule": "wiener",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": [
+        [
+          "dd_alpha",
+          0.9
+        ],
+        [
+          "g_min",
+          0.03
+        ],
+        [
+          "gain_mu",
+          0.0
+        ]
+      ],
+      "est": [
+        [
+          "delta",
+          3.0
+        ],
+        [
+          "rise_db_per_s",
+          3.0
+        ]
+      ],
+      "frame_ms": 32,
+      "window": 15,
+      "external": true
+    },
+    "b1_gain": [
+      [
+        "g_min",
+        0.05
+      ],
+      [
+        "gain_mu",
+        0.0
+      ],
+      [
+        "ss_a",
+        1.0
+      ]
+    ],
+    "b4_gain": [
+      [
+        "g_min",
+        0.03
+      ],
+      [
+        "gain_mu",
+        0.0
+      ]
+    ],
+    "b2_window": 5
+  },
+  "log": [
+    {
+      "stage": "structure",
+      "name": "S1-00",
+      "label": "lsa/mcra/none/rise=0",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "none",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 0.0
+      },
+      "window": 15,
+      "J": 1.2928897640338648,
+      "delta_snr_db": 2.074751026618891,
+      "delta_segsnr_db": 0.5110285014488386
+    },
+    {
+      "stage": "structure",
+      "name": "S1-01",
+      "label": "lsa/mcra/none/rise=3",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "none",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.7167405060467935,
+      "delta_snr_db": 3.136645761444748,
+      "delta_segsnr_db": 2.2968352506488388
+    },
+    {
+      "stage": "structure",
+      "name": "S1-02",
+      "label": "lsa/mcra/biquad/rise=0",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "biquad",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 0.0
+      },
+      "window": 15,
+      "J": -0.4226719103732972,
+      "delta_snr_db": 0.5756502221882136,
+      "delta_segsnr_db": -1.420994042934808
+    },
+    {
+      "stage": "structure",
+      "name": "S1-03",
+      "label": "lsa/mcra/biquad/rise=3",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "biquad",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": -0.07518758429535383,
+      "delta_snr_db": 0.9749513114456839,
+      "delta_segsnr_db": -1.1253264800363916
+    },
+    {
+      "stage": "structure",
+      "name": "S1-04",
+      "label": "lsa/mcra/spectral/rise=0",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 0.0
+      },
+      "window": 15,
+      "J": 1.625344860646568,
+      "delta_snr_db": 2.4981789737288373,
+      "delta_segsnr_db": 0.7525107475642983
+    },
+    {
+      "stage": "structure",
+      "name": "S1-05",
+      "label": "lsa/mcra/spectral/rise=3",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.4911941215856563,
+      "delta_snr_db": 4.235192036349895,
+      "delta_segsnr_db": 2.747196206821418
+    },
+    {
+      "stage": "structure",
+      "name": "S1-06",
+      "label": "lsa/minstats/none/rise=0",
+      "rule": "lsa",
+      "estimator": "minstats",
+      "prefilter": "none",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 0.0
+      },
+      "window": 15,
+      "J": 1.2857643780026247,
+      "delta_snr_db": 1.8331852605934134,
+      "delta_segsnr_db": 0.7383434954118362
+    },
+    {
+      "stage": "structure",
+      "name": "S1-07",
+      "label": "lsa/minstats/none/rise=3",
+      "rule": "lsa",
+      "estimator": "minstats",
+      "prefilter": "none",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.7354207354166613,
+      "delta_snr_db": 3.18004952270981,
+      "delta_segsnr_db": 2.290791948123513
+    },
+    {
+      "stage": "structure",
+      "name": "S1-08",
+      "label": "lsa/minstats/biquad/rise=0",
+      "rule": "lsa",
+      "estimator": "minstats",
+      "prefilter": "biquad",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 0.0
+      },
+      "window": 15,
+      "J": -0.4754473817790428,
+      "delta_snr_db": 0.5209224389900935,
+      "delta_segsnr_db": -1.471817202548179
+    },
+    {
+      "stage": "structure",
+      "name": "S1-09",
+      "label": "lsa/minstats/biquad/rise=3",
+      "rule": "lsa",
+      "estimator": "minstats",
+      "prefilter": "biquad",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": -0.05126402612600256,
+      "delta_snr_db": 0.9848967321021236,
+      "delta_segsnr_db": -1.0874247843541287
+    },
+    {
+      "stage": "structure",
+      "name": "S1-10",
+      "label": "lsa/minstats/spectral/rise=0",
+      "rule": "lsa",
+      "estimator": "minstats",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 0.0
+      },
+      "window": 15,
+      "J": 1.7707570556600662,
+      "delta_snr_db": 2.4704769461172034,
+      "delta_segsnr_db": 1.0710371652029291
+    },
+    {
+      "stage": "structure",
+      "name": "S1-11",
+      "label": "lsa/minstats/spectral/rise=3",
+      "rule": "lsa",
+      "estimator": "minstats",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.4046148407703773,
+      "delta_snr_db": 4.129508068406741,
+      "delta_segsnr_db": 2.679721613134014
+    },
+    {
+      "stage": "structure",
+      "name": "S1-12",
+      "label": "wiener/mcra/none/rise=0",
+      "rule": "wiener",
+      "estimator": "mcra",
+      "prefilter": "none",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 0.0
+      },
+      "window": 15,
+      "J": 1.0899914859821425,
+      "delta_snr_db": 1.804196979625063,
+      "delta_segsnr_db": 0.375785992339222
+    },
+    {
+      "stage": "structure",
+      "name": "S1-13",
+      "label": "wiener/mcra/none/rise=3",
+      "rule": "wiener",
+      "estimator": "mcra",
+      "prefilter": "none",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.7063584215129732,
+      "delta_snr_db": 3.081893059739236,
+      "delta_segsnr_db": 2.3308237832867102
+    },
+    {
+      "stage": "structure",
+      "name": "S1-14",
+      "label": "wiener/mcra/biquad/rise=0",
+      "rule": "wiener",
+      "estimator": "mcra",
+      "prefilter": "biquad",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 0.0
+      },
+      "window": 15,
+      "J": -0.5367146670968116,
+      "delta_snr_db": 0.39243585356394045,
+      "delta_segsnr_db": -1.4658651877575637
+    },
+    {
+      "stage": "structure",
+      "name": "S1-15",
+      "label": "wiener/mcra/biquad/rise=3",
+      "rule": "wiener",
+      "estimator": "mcra",
+      "prefilter": "biquad",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": -0.06292775881695428,
+      "delta_snr_db": 0.9400937288728156,
+      "delta_segsnr_db": -1.0659492465067242
+    },
+    {
+      "stage": "structure",
+      "name": "S1-16",
+      "label": "wiener/mcra/spectral/rise=0",
+      "rule": "wiener",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 0.0
+      },
+      "window": 15,
+      "J": 1.3293360405453163,
+      "delta_snr_db": 2.1280166505296974,
+      "delta_segsnr_db": 0.5306554305609353
+    },
+    {
+      "stage": "structure",
+      "name": "S1-17",
+      "label": "wiener/mcra/spectral/rise=3",
+      "rule": "wiener",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.339803260129661,
+      "delta_snr_db": 4.014801734022439,
+      "delta_segsnr_db": 2.664804786236883
+    },
+    {
+      "stage": "structure",
+      "name": "S1-18",
+      "label": "wiener/minstats/none/rise=0",
+      "rule": "wiener",
+      "estimator": "minstats",
+      "prefilter": "none",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 0.0
+      },
+      "window": 15,
+      "J": 1.153358780136355,
+      "delta_snr_db": 1.6259109127877245,
+      "delta_segsnr_db": 0.6808066474849855
+    },
+    {
+      "stage": "structure",
+      "name": "S1-19",
+      "label": "wiener/minstats/none/rise=3",
+      "rule": "wiener",
+      "estimator": "minstats",
+      "prefilter": "none",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.698934006723727,
+      "delta_snr_db": 3.087018314701993,
+      "delta_segsnr_db": 2.3108496987454608
+    },
+    {
+      "stage": "structure",
+      "name": "S1-20",
+      "label": "wiener/minstats/biquad/rise=0",
+      "rule": "wiener",
+      "estimator": "minstats",
+      "prefilter": "biquad",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 0.0
+      },
+      "window": 15,
+      "J": -0.5508596536628042,
+      "delta_snr_db": 0.3762004398375766,
+      "delta_segsnr_db": -1.477919747163185
+    },
+    {
+      "stage": "structure",
+      "name": "S1-21",
+      "label": "wiener/minstats/biquad/rise=3",
+      "rule": "wiener",
+      "estimator": "minstats",
+      "prefilter": "biquad",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": -0.052174592316420576,
+      "delta_snr_db": 0.9301556553142253,
+      "delta_segsnr_db": -1.0345048399470664
+    },
+    {
+      "stage": "structure",
+      "name": "S1-22",
+      "label": "wiener/minstats/spectral/rise=0",
+      "rule": "wiener",
+      "estimator": "minstats",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 0.0
+      },
+      "window": 15,
+      "J": 1.53192865481816,
+      "delta_snr_db": 2.151175047192362,
+      "delta_segsnr_db": 0.9126822624439584
+    },
+    {
+      "stage": "structure",
+      "name": "S1-23",
+      "label": "wiener/minstats/spectral/rise=3",
+      "rule": "wiener",
+      "estimator": "minstats",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.2372042721361134,
+      "delta_snr_db": 3.887185402010828,
+      "delta_segsnr_db": 2.587223142261399
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-00",
+      "label": "g_min=0.1, gain_mu=0.5, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.4911941215856563,
+      "delta_snr_db": 4.235192036349895,
+      "delta_segsnr_db": 2.747196206821418
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-01",
+      "label": "g_min=0.1, gain_mu=0.5, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.8865067495841843,
+      "delta_snr_db": 4.6970134078344685,
+      "delta_segsnr_db": 3.0760000913339
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-02",
+      "label": "g_min=0.1, gain_mu=0.5, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.045786664056044,
+      "delta_snr_db": 4.87708979054838,
+      "delta_segsnr_db": 3.2144835375637073
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-03",
+      "label": "g_min=0.1, gain_mu=0.5, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.1,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.088327056820114,
+      "delta_snr_db": 4.915100199936224,
+      "delta_segsnr_db": 3.2615539137040046
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-04",
+      "label": "g_min=0.1, gain_mu=0, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.526206608044454,
+      "delta_snr_db": 5.3367357273956095,
+      "delta_segsnr_db": 3.7156774886932986
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-05",
+      "label": "g_min=0.1, gain_mu=0, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.1,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.807993827010317,
+      "delta_snr_db": 5.6306869521549245,
+      "delta_segsnr_db": 3.9853007018657087
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-06",
+      "label": "g_min=0.1, gain_mu=0, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.1,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.824755053449612,
+      "delta_snr_db": 5.62219594774154,
+      "delta_segsnr_db": 4.027314159157684
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-07",
+      "label": "g_min=0.1, gain_mu=0, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.1,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.698643849674626,
+      "delta_snr_db": 5.453734723292455,
+      "delta_segsnr_db": 3.9435529760567984
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-08",
+      "label": "g_min=0.1, gain_mu=0.3, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.0742327733121915,
+      "delta_snr_db": 4.8710476246589804,
+      "delta_segsnr_db": 3.2774179219654016
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-09",
+      "label": "g_min=0.1, gain_mu=0.3, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.1,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.429383301204935,
+      "delta_snr_db": 5.269522032577595,
+      "delta_segsnr_db": 3.5892445698322755
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-10",
+      "label": "g_min=0.1, gain_mu=0.3, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.1,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.526411286561076,
+      "delta_snr_db": 5.363936415352418,
+      "delta_segsnr_db": 3.688886157769734
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-11",
+      "label": "g_min=0.1, gain_mu=0.3, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.1,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.491380888034012,
+      "delta_snr_db": 5.302541848441321,
+      "delta_segsnr_db": 3.680219927626702
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-12",
+      "label": "g_min=0.1, gain_mu=0.7, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.1,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.5547568083047367,
+      "delta_snr_db": 3.190041396323447,
+      "delta_segsnr_db": 1.9194722202860266
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-13",
+      "label": "g_min=0.1, gain_mu=0.7, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.1,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.9626756186224226,
+      "delta_snr_db": 3.6814673434690226,
+      "delta_segsnr_db": 2.243883893775822
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-14",
+      "label": "g_min=0.1, gain_mu=0.7, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.1,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.1755596727022883,
+      "delta_snr_db": 3.939184964265358,
+      "delta_segsnr_db": 2.411934381139219
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-15",
+      "label": "g_min=0.1, gain_mu=0.7, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.1,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.294632637579193,
+      "delta_snr_db": 4.08052589112948,
+      "delta_segsnr_db": 2.508739384028906
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-16",
+      "label": "g_min=0.03, gain_mu=0.5, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.03,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.486088990643987,
+      "delta_snr_db": 4.206690094347259,
+      "delta_segsnr_db": 2.7654878869407145
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-17",
+      "label": "g_min=0.03, gain_mu=0.5, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.03,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.883498523116323,
+      "delta_snr_db": 4.682174531030048,
+      "delta_segsnr_db": 3.084822515202598
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-18",
+      "label": "g_min=0.03, gain_mu=0.5, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.03,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.042087369254378,
+      "delta_snr_db": 4.866016325869302,
+      "delta_segsnr_db": 3.2181584126394527
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-19",
+      "label": "g_min=0.03, gain_mu=0.5, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.03,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.084254955372215,
+      "delta_snr_db": 4.906023119978015,
+      "delta_segsnr_db": 3.262486790766414
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-20",
+      "label": "g_min=0.03, gain_mu=0, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.03,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.544520976663665,
+      "delta_snr_db": 5.341673299919894,
+      "delta_segsnr_db": 3.7473686534074355
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-21",
+      "label": "g_min=0.03, gain_mu=0, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.03,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.820724875485294,
+      "delta_snr_db": 5.637556122236604,
+      "delta_segsnr_db": 4.003893628733985
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-22",
+      "label": "g_min=0.03, gain_mu=0, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.03,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.833927600358278,
+      "delta_snr_db": 5.628480361752246,
+      "delta_segsnr_db": 4.039374838964309
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-23",
+      "label": "g_min=0.03, gain_mu=0, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.03,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.705981633246385,
+      "delta_snr_db": 5.459750050824143,
+      "delta_segsnr_db": 3.9522132156686274
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-24",
+      "label": "g_min=0.03, gain_mu=0.3, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.03,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.083359895090579,
+      "delta_snr_db": 4.86256293375622,
+      "delta_segsnr_db": 3.304156856424938
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-25",
+      "label": "g_min=0.03, gain_mu=0.3, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.03,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.436639632332877,
+      "delta_snr_db": 5.268911987760401,
+      "delta_segsnr_db": 3.604367276905354
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-26",
+      "label": "g_min=0.03, gain_mu=0.3, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.03,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.531714981984812,
+      "delta_snr_db": 5.365274049861575,
+      "delta_segsnr_db": 3.698155914108049
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-27",
+      "label": "g_min=0.03, gain_mu=0.3, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.03,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.495985226387109,
+      "delta_snr_db": 5.305343239716899,
+      "delta_segsnr_db": 3.6866272130573186
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-28",
+      "label": "g_min=0.03, gain_mu=0.7, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.03,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.524964849935487,
+      "delta_snr_db": 3.1275314088427884,
+      "delta_segsnr_db": 1.9223982910281863
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-29",
+      "label": "g_min=0.03, gain_mu=0.7, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.03,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.941100228464984,
+      "delta_snr_db": 3.6407619041216917,
+      "delta_segsnr_db": 2.241438552808276
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-30",
+      "label": "g_min=0.03, gain_mu=0.7, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.03,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.1547590606279723,
+      "delta_snr_db": 3.904027815352122,
+      "delta_segsnr_db": 2.405490305903823
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-31",
+      "label": "g_min=0.03, gain_mu=0.7, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.03,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.273204935144928,
+      "delta_snr_db": 4.046874152979748,
+      "delta_segsnr_db": 2.499535717310108
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-32",
+      "label": "g_min=0.05, gain_mu=0.5, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.05,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.4878377768664235,
+      "delta_snr_db": 4.211644830181959,
+      "delta_segsnr_db": 2.764030723550888
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-33",
+      "label": "g_min=0.05, gain_mu=0.5, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.05,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.88525986859208,
+      "delta_snr_db": 4.685706966791125,
+      "delta_segsnr_db": 3.084812770393035
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-34",
+      "label": "g_min=0.05, gain_mu=0.5, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.05,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.043945893392765,
+      "delta_snr_db": 4.86902487972564,
+      "delta_segsnr_db": 3.2188669070598896
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-35",
+      "label": "g_min=0.05, gain_mu=0.5, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.05,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.086172846741267,
+      "delta_snr_db": 4.908779229862471,
+      "delta_segsnr_db": 3.263566463620063
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-36",
+      "label": "g_min=0.05, gain_mu=0, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.05,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.542502595191456,
+      "delta_snr_db": 5.341251070164104,
+      "delta_segsnr_db": 3.7437541202188083
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-37",
+      "label": "g_min=0.05, gain_mu=0, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.05,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.819542888837937,
+      "delta_snr_db": 5.637006241811764,
+      "delta_segsnr_db": 4.002079535864111
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-38",
+      "label": "g_min=0.05, gain_mu=0, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.05,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.833191930554325,
+      "delta_snr_db": 5.62795168024927,
+      "delta_segsnr_db": 4.038432180859381
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-39",
+      "label": "g_min=0.05, gain_mu=0, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.05,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.705380313875324,
+      "delta_snr_db": 5.459153228424799,
+      "delta_segsnr_db": 3.95160739932585
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-40",
+      "label": "g_min=0.05, gain_mu=0.3, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.05,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.082794304986106,
+      "delta_snr_db": 4.86421673401941,
+      "delta_segsnr_db": 3.3013718759528032
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-41",
+      "label": "g_min=0.05, gain_mu=0.3, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.05,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.436456847777695,
+      "delta_snr_db": 5.269701736512173,
+      "delta_segsnr_db": 3.6032119590432155
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-42",
+      "label": "g_min=0.05, gain_mu=0.3, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.05,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.531744593733354,
+      "delta_snr_db": 5.3657032210039,
+      "delta_segsnr_db": 3.697785966462808
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-43",
+      "label": "g_min=0.05, gain_mu=0.3, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.05,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.496002030640056,
+      "delta_snr_db": 5.305448345945281,
+      "delta_segsnr_db": 3.6865557153348303
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-44",
+      "label": "g_min=0.05, gain_mu=0.7, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.05,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.5308728460361216,
+      "delta_snr_db": 3.138405656465269,
+      "delta_segsnr_db": 1.9233400356069745
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-45",
+      "label": "g_min=0.05, gain_mu=0.7, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.05,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.946485033282471,
+      "delta_snr_db": 3.6495627830669455,
+      "delta_segsnr_db": 2.243407283497996
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-46",
+      "label": "g_min=0.05, gain_mu=0.7, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.05,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.1602045833149415,
+      "delta_snr_db": 3.9122822691581445,
+      "delta_segsnr_db": 2.408126897471739
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-47",
+      "label": "g_min=0.05, gain_mu=0.7, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.05,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.278978976324991,
+      "delta_snr_db": 4.055269559882586,
+      "delta_segsnr_db": 2.502688392767396
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-48",
+      "label": "g_min=0.2, gain_mu=0.5, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.2,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.525740361192149,
+      "delta_snr_db": 4.347337412589707,
+      "delta_segsnr_db": 2.7041433097945906
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-49",
+      "label": "g_min=0.2, gain_mu=0.5, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.2,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.8636387024525156,
+      "delta_snr_db": 4.716215491655063,
+      "delta_segsnr_db": 3.0110619132499674
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-50",
+      "label": "g_min=0.2, gain_mu=0.5, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.2,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.024020175116645,
+      "delta_snr_db": 4.879525257614809,
+      "delta_segsnr_db": 3.1685150926184815
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-51",
+      "label": "g_min=0.2, gain_mu=0.5, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.2,
+        "gain_mu": 0.5
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.070634305782588,
+      "delta_snr_db": 4.912127658636063,
+      "delta_segsnr_db": 3.229140952929113
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-52",
+      "label": "g_min=0.2, gain_mu=0, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.2,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.4710238995097775,
+      "delta_snr_db": 5.326262402013761,
+      "delta_segsnr_db": 3.615785397005795
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-53",
+      "label": "g_min=0.2, gain_mu=0, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.2,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.726685874666764,
+      "delta_snr_db": 5.572139285224004,
+      "delta_segsnr_db": 3.881232464109524
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-54",
+      "label": "g_min=0.2, gain_mu=0, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.2,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.764803189212341,
+      "delta_snr_db": 5.574898566910843,
+      "delta_segsnr_db": 3.954707811513838
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-55",
+      "label": "g_min=0.2, gain_mu=0, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.2,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.653358955450894,
+      "delta_snr_db": 5.41577540160739,
+      "delta_segsnr_db": 3.8909425092943994
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-56",
+      "label": "g_min=0.2, gain_mu=0.3, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.2,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.055798079546546,
+      "delta_snr_db": 4.9108690185933765,
+      "delta_segsnr_db": 3.2007271404997146
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-57",
+      "label": "g_min=0.2, gain_mu=0.3, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.2,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.369063230314059,
+      "delta_snr_db": 5.238644384353707,
+      "delta_segsnr_db": 3.4994820762744117
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-58",
+      "label": "g_min=0.2, gain_mu=0.3, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.2,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.477908189724555,
+      "delta_snr_db": 5.331061341517349,
+      "delta_segsnr_db": 3.6247550379317617
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-59",
+      "label": "g_min=0.2, gain_mu=0.3, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.2,
+        "gain_mu": 0.3
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.452178133214876,
+      "delta_snr_db": 5.271552553336416,
+      "delta_segsnr_db": 3.632803713093337
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-60",
+      "label": "g_min=0.2, gain_mu=0.7, dd_alpha=0.98",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.98,
+        "g_min": 0.2,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.6749481236063404,
+      "delta_snr_db": 3.4171699099739743,
+      "delta_segsnr_db": 1.9327263372387067
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-61",
+      "label": "g_min=0.2, gain_mu=0.7, dd_alpha=0.95",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.95,
+        "g_min": 0.2,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.005054153962078,
+      "delta_snr_db": 3.7869571246253897,
+      "delta_segsnr_db": 2.2231511832987665
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-62",
+      "label": "g_min=0.2, gain_mu=0.7, dd_alpha=0.9",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.2,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.203600585237334,
+      "delta_snr_db": 4.007702505426249,
+      "delta_segsnr_db": 2.399498665048419
+    },
+    {
+      "stage": "gain-grid",
+      "name": "S2-63",
+      "label": "g_min=0.2, gain_mu=0.7, dd_alpha=0.8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.8,
+        "g_min": 0.2,
+        "gain_mu": 0.7
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.320093223598382,
+      "delta_snr_db": 4.1348036477459384,
+      "delta_segsnr_db": 2.5053827994508255
+    },
+    {
+      "stage": "sweep",
+      "name": "S3-00",
+      "label": "rise_db_per_s=3",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.03,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.833927600358278,
+      "delta_snr_db": 5.628480361752246,
+      "delta_segsnr_db": 4.039374838964309
+    },
+    {
+      "stage": "sweep",
+      "name": "S3-01",
+      "label": "rise_db_per_s=1.5",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.03,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 1.5
+      },
+      "window": 15,
+      "J": 4.630838678137779,
+      "delta_snr_db": 5.403612082884845,
+      "delta_segsnr_db": 3.858065273390713
+    },
+    {
+      "stage": "sweep",
+      "name": "S3-02",
+      "label": "rise_db_per_s=6",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.03,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 6.0
+      },
+      "window": 15,
+      "J": 4.788586270178044,
+      "delta_snr_db": 5.632201817301414,
+      "delta_segsnr_db": 3.944970723054674
+    },
+    {
+      "stage": "sweep",
+      "name": "S3-03",
+      "label": "rise_db_per_s=12",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.03,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 12.0
+      },
+      "window": 15,
+      "J": 4.575816033889467,
+      "delta_snr_db": 5.540178791225817,
+      "delta_segsnr_db": 3.6114532765531173
+    },
+    {
+      "stage": "sweep",
+      "name": "S3-04",
+      "label": "delta=3",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.03,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.855707892153724,
+      "delta_snr_db": 5.63886530787816,
+      "delta_segsnr_db": 4.072550476429287
+    },
+    {
+      "stage": "sweep",
+      "name": "S3-05",
+      "label": "delta=8",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.03,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "delta": 8.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.813833463268246,
+      "delta_snr_db": 5.617837658949256,
+      "delta_segsnr_db": 4.009829267587237
+    },
+    {
+      "stage": "sweep",
+      "name": "S3-06",
+      "label": "rule=wiener",
+      "rule": "wiener",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.03,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 5.022347878989987,
+      "delta_snr_db": 5.7838900127237425,
+      "delta_segsnr_db": 4.260805745256232
+    },
+    {
+      "stage": "combination",
+      "name": "S4-combined",
+      "label": "combined sweep winners",
+      "rule": "wiener",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "dd_alpha": 0.9,
+        "g_min": 0.03,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 5.0569103132474496,
+      "delta_snr_db": 5.807062826902802,
+      "delta_segsnr_db": 4.306757799592097
+    },
+    {
+      "stage": "baselines",
+      "name": "B1|a=2|g=0.1",
+      "label": "B1",
+      "rule": "subtraction",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.1,
+        "gain_mu": 0.0,
+        "ss_a": 2.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.990032330190587,
+      "delta_snr_db": 4.980150433637341,
+      "delta_segsnr_db": 2.9999142267438335
+    },
+    {
+      "stage": "baselines",
+      "name": "B1|a=2|g=0.05",
+      "label": "B1",
+      "rule": "subtraction",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.05,
+        "gain_mu": 0.0,
+        "ss_a": 2.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.9966535964110315,
+      "delta_snr_db": 4.9597000169860745,
+      "delta_segsnr_db": 3.0336071758359884
+    },
+    {
+      "stage": "baselines",
+      "name": "B1|a=2|g=0.2",
+      "label": "B1",
+      "rule": "subtraction",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.2,
+        "gain_mu": 0.0,
+        "ss_a": 2.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 3.91150240026984,
+      "delta_snr_db": 4.958026542758706,
+      "delta_segsnr_db": 2.864978257780974
+    },
+    {
+      "stage": "baselines",
+      "name": "B1|a=1|g=0.1",
+      "label": "B1",
+      "rule": "subtraction",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.1,
+        "gain_mu": 0.0,
+        "ss_a": 1.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.631889459652003,
+      "delta_snr_db": 5.526290646318354,
+      "delta_segsnr_db": 3.737488272985651
+    },
+    {
+      "stage": "baselines",
+      "name": "B1|a=1|g=0.05",
+      "label": "B1",
+      "rule": "subtraction",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.05,
+        "gain_mu": 0.0,
+        "ss_a": 1.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.651966467133479,
+      "delta_snr_db": 5.540945954711237,
+      "delta_segsnr_db": 3.762986979555721
+    },
+    {
+      "stage": "baselines",
+      "name": "B1|a=1|g=0.2",
+      "label": "B1",
+      "rule": "subtraction",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.2,
+        "gain_mu": 0.0,
+        "ss_a": 1.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.5563870158309125,
+      "delta_snr_db": 5.464640564540896,
+      "delta_segsnr_db": 3.648133467120929
+    },
+    {
+      "stage": "baselines",
+      "name": "B1|a=1.5|g=0.1",
+      "label": "B1",
+      "rule": "subtraction",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.1,
+        "gain_mu": 0.0,
+        "ss_a": 1.5
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.458583850381483,
+      "delta_snr_db": 5.432107865693621,
+      "delta_segsnr_db": 3.4850598350693462
+    },
+    {
+      "stage": "baselines",
+      "name": "B1|a=1.5|g=0.05",
+      "label": "B1",
+      "rule": "subtraction",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.05,
+        "gain_mu": 0.0,
+        "ss_a": 1.5
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.47823537165773,
+      "delta_snr_db": 5.436196260601903,
+      "delta_segsnr_db": 3.5202744827135564
+    },
+    {
+      "stage": "baselines",
+      "name": "B1|a=1.5|g=0.2",
+      "label": "B1",
+      "rule": "subtraction",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.2,
+        "gain_mu": 0.0,
+        "ss_a": 1.5
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.360626308878867,
+      "delta_snr_db": 5.369622861217675,
+      "delta_segsnr_db": 3.3516297565400595
+    },
+    {
+      "stage": "baselines",
+      "name": "B1|a=3|g=0.1",
+      "label": "B1",
+      "rule": "subtraction",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.1,
+        "gain_mu": 0.0,
+        "ss_a": 3.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.9997612902752846,
+      "delta_snr_db": 3.9523581265956578,
+      "delta_segsnr_db": 2.0471644539549114
+    },
+    {
+      "stage": "baselines",
+      "name": "B1|a=3|g=0.05",
+      "label": "B1",
+      "rule": "subtraction",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.05,
+        "gain_mu": 0.0,
+        "ss_a": 3.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.9737638782679827,
+      "delta_snr_db": 3.8832099260628974,
+      "delta_segsnr_db": 2.064317830473068
+    },
+    {
+      "stage": "baselines",
+      "name": "B1|a=3|g=0.2",
+      "label": "B1",
+      "rule": "subtraction",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.2,
+        "gain_mu": 0.0,
+        "ss_a": 3.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.9906589747111947,
+      "delta_snr_db": 4.030726005087837,
+      "delta_segsnr_db": 1.950591944334552
+    },
+    {
+      "stage": "baselines",
+      "name": "B1|a=4|g=0.1",
+      "label": "B1",
+      "rule": "subtraction",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.1,
+        "gain_mu": 0.0,
+        "ss_a": 4.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.1898819132791107,
+      "delta_snr_db": 3.0852429867948574,
+      "delta_segsnr_db": 1.2945208397633645
+    },
+    {
+      "stage": "baselines",
+      "name": "B1|a=4|g=0.05",
+      "label": "B1",
+      "rule": "subtraction",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.05,
+        "gain_mu": 0.0,
+        "ss_a": 4.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.136427104508289,
+      "delta_snr_db": 2.979243622418294,
+      "delta_segsnr_db": 1.2936105865982837
+    },
+    {
+      "stage": "baselines",
+      "name": "B1|a=4|g=0.2",
+      "label": "B1",
+      "rule": "subtraction",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.2,
+        "gain_mu": 0.0,
+        "ss_a": 4.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 2.243577732340597,
+      "delta_snr_db": 3.2467592365836238,
+      "delta_segsnr_db": 1.2403962280975704
+    },
+    {
+      "stage": "baselines",
+      "name": "B4|g=0.1",
+      "label": "B4",
+      "rule": "ml_wiener",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.1,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.38000399807777,
+      "delta_snr_db": 5.050815044283283,
+      "delta_segsnr_db": 3.709192951872258
+    },
+    {
+      "stage": "baselines",
+      "name": "B4|g=0.03",
+      "label": "B4",
+      "rule": "ml_wiener",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.03,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.402907373250716,
+      "delta_snr_db": 5.072400916937018,
+      "delta_segsnr_db": 3.7334138295644137
+    },
+    {
+      "stage": "baselines",
+      "name": "B4|g=0.05",
+      "label": "B4",
+      "rule": "ml_wiener",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.05,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.398119122248129,
+      "delta_snr_db": 5.067632628156887,
+      "delta_segsnr_db": 3.728605616339372
+    },
+    {
+      "stage": "baselines",
+      "name": "B4|g=0.2",
+      "label": "B4",
+      "rule": "ml_wiener",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.2,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.31680816278813,
+      "delta_snr_db": 4.992896674458158,
+      "delta_segsnr_db": 3.6407196511181015
+    },
+    {
+      "stage": "baselines",
+      "name": "B4|g=0.3",
+      "label": "B4",
+      "rule": "ml_wiener",
+      "estimator": "mcra",
+      "prefilter": "spectral",
+      "gain": {
+        "g_min": 0.3,
+        "gain_mu": 0.0
+      },
+      "est": {
+        "delta": 3.0,
+        "rise_db_per_s": 3.0
+      },
+      "window": 15,
+      "J": 4.2187741361393645,
+      "delta_snr_db": 4.900080902844588,
+      "delta_segsnr_db": 3.53746736943414
+    },
+    {
+      "stage": "baselines",
+      "name": "B2|w=15",
+      "label": "B2",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "none",
+      "gain": {},
+      "est": {},
+      "window": 15,
+      "J": -1.0723705834449482,
+      "delta_snr_db": -0.12457561505819185,
+      "delta_segsnr_db": -2.0201655518317043
+    },
+    {
+      "stage": "baselines",
+      "name": "B2|w=5",
+      "label": "B2",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "none",
+      "gain": {},
+      "est": {},
+      "window": 5,
+      "J": -0.29308130317393,
+      "delta_snr_db": 0.38865641016629665,
+      "delta_segsnr_db": -0.9748190165141566
+    },
+    {
+      "stage": "baselines",
+      "name": "B2|w=9",
+      "label": "B2",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "none",
+      "gain": {},
+      "est": {},
+      "window": 9,
+      "J": -0.7486581828870008,
+      "delta_snr_db": 0.10678330593872402,
+      "delta_segsnr_db": -1.6040996717127256
+    },
+    {
+      "stage": "baselines",
+      "name": "B2|w=31",
+      "label": "B2",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "none",
+      "gain": {},
+      "est": {},
+      "window": 31,
+      "J": -2.239781949700672,
+      "delta_snr_db": -1.1960603538264172,
+      "delta_segsnr_db": -3.283503545574927
+    },
+    {
+      "stage": "baselines",
+      "name": "B2|w=63",
+      "label": "B2",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "none",
+      "gain": {},
+      "est": {},
+      "window": 63,
+      "J": -3.0396294591965742,
+      "delta_snr_db": -1.9338018035529403,
+      "delta_segsnr_db": -4.145457114840208
+    },
+    {
+      "stage": "baselines",
+      "name": "B3",
+      "label": "B3",
+      "rule": "lsa",
+      "estimator": "mcra",
+      "prefilter": "none",
+      "gain": {},
+      "est": {},
+      "window": 15,
+      "J": -2.479920009039043,
+      "delta_snr_db": -2.0739367614745046,
+      "delta_segsnr_db": -2.885903256603582
+    }
+  ],
+  "seconds": 555.0068218510003
+}
