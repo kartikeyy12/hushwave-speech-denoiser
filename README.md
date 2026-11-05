@@ -30,14 +30,36 @@ make experiments-quick    # 10-minute rehearsal into results/quick (not a result
 TEST is evaluated once per frozen setting (`results/tuning.json`); a second run is refused
 unless `--force-retest` is passed, and every evaluation is logged in `results.json`.
 
+## Demonstration (M9)
+
+```bash
+make examples        # replay clips from data/recordings, written to examples/
+make demo-replay     # original, spectral subtraction and HushWave, switchable during playback
+make demo-live       # microphone through the streaming engine (Chrome or Edge, headphones)
+```
+
+The browser is only the audio device. All processing runs in the streaming engine with the frozen settings of
+`results/tuning.json`. See `docs/DEMO.md` for the session script and troubleshooting.
+
+## Report (M10)
+
+```bash
+make report          # tables and numbers from results.json, docs/VIVA.md, report/hushwave_report.pdf
+```
+
+Every number in the report is a macro generated from `results/results.json`. Before building, the script checks the
+qualitative statements of the text against the data and stops when one no longer holds.
+
 ## Layout
 
 - `src/hushwave/`: the library
-- `scripts/`: command-line tools (verification, data, experiments, demos)
+- `demo/web/`: the demonstration interface
+- `scripts/`: command-line tools (verification, data, experiments, demonstration, report)
 - `tests/`: pytest suite
-- `docs/`: theory, traceability, limitations
+- `docs/`: theory, results, traceability, limitations, viva notes, demonstration guide, submission checklist
 - `results/`: generated results and figures
-- `report/`: the project report
+- `report/`: the project report (LaTeX source and PDF)
+- `examples/`: replay clips
 
 ## License
 

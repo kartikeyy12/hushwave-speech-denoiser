@@ -3,7 +3,7 @@ VENV := .venv
 PY := $(VENV)/bin/python
 PYTHON ?= $(shell bash scripts/find_python.sh)
 
-.PHONY: setup data data-check test lint typecheck docs d1-figure perf experiments experiments-quick figures results-doc report demo-live demo-replay verify all clean
+.PHONY: setup data data-check test lint typecheck docs d1-figure perf experiments experiments-quick figures results-doc examples report demo-live demo-replay verify all clean
 
 setup:
 	@test -n "$(PYTHON)" || { echo "No suitable Python found. Install one or pass PYTHON=/path/to/python"; exit 1; }
@@ -56,14 +56,20 @@ figures:
 results-doc:
 	$(PY) scripts/make_results_doc.py
 
-report:
-	@echo "make report is added in milestone M10"; exit 1
-
-demo-live:
-	@echo "make demo-live is added in milestone M9"; exit 1
+# M9: replay clips from your own recordings (data/recordings), then the demo interface.
+examples:
+	$(PY) scripts/prepare_examples.py
 
 demo-replay:
-	@echo "make demo-replay is added in milestone M9"; exit 1
+	$(PY) scripts/demo.py replay
+
+demo-live:
+	$(PY) scripts/demo.py live
+
+# M10: tables and numbers from results.json, docs/VIVA.md, then report/hushwave_report.pdf.
+# Needs pdflatex: sudo apt install texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended
+report:
+	$(PY) scripts/make_report.py
 
 verify:
 	$(PY) scripts/verify.py

@@ -1,0 +1,91 @@
+{
+  "variants": [
+    {
+      "key": "original",
+      "system": "B0",
+      "label": "Original"
+    },
+    {
+      "key": "b1",
+      "system": "B1",
+      "label": "Spectral subtraction"
+    },
+    {
+      "key": "b5",
+      "system": "B5",
+      "label": "HushWave"
+    }
+  ],
+  "clips": [
+    {
+      "id": "speech_in_fan",
+      "title": "Speech in fan noise",
+      "note": "A voice recorded in front of a running fan.",
+      "duration_s": 14.0,
+      "fs": 16000,
+      "files": {
+        "original": {
+          "audio": "speech_in_fan_original.wav",
+          "image": "speech_in_fan_original.png"
+        },
+        "b1": {
+          "audio": "speech_in_fan_b1.wav",
+          "image": "speech_in_fan_b1.png"
+        },
+        "b5": {
+          "audio": "speech_in_fan_b5.wav",
+          "image": "speech_in_fan_b5.png"
+        }
+      },
+      "measurements": {
+        "original": {
+          "noise_reduction_pause_db": 0.0,
+          "speech_level_change_db": 0.0
+        },
+        "b1": {
+          "noise_reduction_pause_db": 3.918366234148149,
+          "speech_level_change_db": -0.6027797320963231
+        },
+        "b5": {
+          "noise_reduction_pause_db": 2.839683423639005,
+          "speech_level_change_db": -0.24843093034772323
+        }
+      }
+    },
+    {
+      "id": "speech_in_corridor",
+      "title": "Speech in corridor noise",
+      "note": "A voice recorded in a corridor with ambient noise.",
+      "duration_s": 14.0,
+      "fs": 16000,
+      "files": {
+        "original": {
+          "audio": "speech_in_corridor_original.wav",
+          "image": "speech_in_corridor_original.png"
+        },
+        "b1": {
+          "audio": "speech_in_corridor_b1.wav",
+          "image": "speech_in_corridor_b1.png"
+        },
+        "b5": {
+          "audio": "speech_in_corridor_b5.wav",
+          "image": "speech_in_corridor_b5.png"
+        }
+      },
+      "measurements": {
+        "original": {
+          "noise_reduction_pause_db": 0.0,
+          "speech_level_change_db": 0.0
+        },
+        "b1": {
+          "noise_reduction_pause_db": 2.138133001384897,
+          "speech_level_change_db": -0.3315418561492933
+        },
+        "b5": {
+          "noise_reduction_pause_db": 1.934496150202929,
+          "speech_level_change_db": -0.16015200261253604
+        }
+      }
+    }
+  ]
+}

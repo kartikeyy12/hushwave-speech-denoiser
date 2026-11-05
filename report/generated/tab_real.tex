@@ -1,0 +1,18 @@
+\begin{tabular}{lrrrr}
+\toprule
+System & NR in pauses (dB) & Pause level (dBFS) & Speech level (dB) & MNR \\
+\midrule
+\multicolumn{5}{l}{\emph{Speech in fan noise}} \\
+B1 spectral subtraction (G1) & 3.9 & $-$46.1 & $-$0.6 & 2.77 \\
+B2 scipy.signal.wiener & 1.5 & $-$43.6 & $-$0.2 & 2.19 \\
+B3 noisereduce (default) & 15.1 & $-$57.3 & $-$9.8 & 6.85 \\
+B4 Wiener, plain SNR & 2.3 & $-$44.5 & $-$0.1 & 2.11 \\
+B5 HushWave (full) & 2.8 & $-$45.0 & $-$0.2 & 2.87 \\
+\multicolumn{5}{l}{\emph{Speech in corridor noise}} \\
+B1 spectral subtraction (G1) & 2.1 & $-$39.7 & $-$0.3 & 1.48 \\
+B2 scipy.signal.wiener & 0.7 & $-$38.3 & $-$0.2 & 0.99 \\
+B3 noisereduce (default) & 20.1 & $-$57.7 & $-$11.3 & 6.39 \\
+B4 Wiener, plain SNR & 1.8 & $-$39.4 & $-$0.1 & 1.33 \\
+B5 HushWave (full) & 1.9 & $-$39.5 & $-$0.2 & 1.42 \\
+\bottomrule
+\end{tabular}

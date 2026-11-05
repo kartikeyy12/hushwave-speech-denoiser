@@ -15,6 +15,7 @@ dependencies = [
     "scipy>=1.11",
     "matplotlib>=3.8",
     "soundfile>=0.12",
+    "pillow>=10.0",
 ]
 
 [project.optional-dependencies]

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HushWave</title>
+<link rel="stylesheet" href="/web/style.css">
+</head>
+<body>
+<header class="bar">
+  <div class="brand">
+    <span class="mark">HushWave</span>
+    <span class="sub">Single-channel speech noise reduction</span>
+  </div>
+  <nav role="tablist" aria-label="Mode">
+    <button type="button" role="tab" id="tab-replay" data-tab="replay" aria-controls="panel-replay" aria-selected="true">Replay</button>
+    <button type="button" role="tab" id="tab-live" data-tab="live" aria-controls="panel-live" aria-selected="false">Live</button>
+  </nav>
+</header>
+
+<main>
+  <section id="panel-replay" role="tabpanel" aria-labelledby="tab-replay">
+    <div class="row">
+      <div id="clips" class="segmented" role="group" aria-label="Recording"></div>
+      <p id="clip-note" class="muted"></p>
+    </div>
+
+    <figure class="plot">
+      <div class="yaxis" aria-hidden="true"><span>8 kHz</span><span>4 kHz</span><span>0</span></div>
+      <div id="spec" class="canvas" tabindex="0" role="slider" aria-label="Playback position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <img id="spec-img" alt="Spectrogram of the selected version" draggable="false">
+        <div id="playhead"></div>
+      </div>
+      <div class="xaxis" aria-hidden="true"><span>0 s</span><span id="x-end"></span></div>
+    </figure>
+
+    <div class="controls">
+      <button type="button" id="play" class="primary">Play</button>
+      <span id="time" class="mono">0:00 / 0:00</span>
+      <div id="variants" class="segmented" role="group" aria-label="Version"></div>
+    </div>
+    <p class="hint">Space plays or pauses. Keys 1 to 3 switch version. Arrow keys seek. All versions share one level and one colour scale.</p>
+
+    <table class="measures" id="measures" hidden>
+      <caption>Whole recording, no clean reference available</caption>
+      <thead>
+        <tr><th scope="col">Version</th><th scope="col" class="num">Noise reduction in pauses</th><th scope="col" class="num">Speech level change</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p id="replay-error" class="error" role="alert" hidden></p>
+  </section>
+
+  <section id="panel-live" role="tabpanel" aria-labelledby="tab-live" hidden>
+    <div class="row">
+      <button type="button" id="live-toggle" class="primary">Start</button>
+      <div class="switch-row">
+        <button type="button" id="enhance" class="switch" role="switch" aria-checked="true" aria-labelledby="enhance-label"></button>
+        <span id="enhance-label">Enhancement</span>
+      </div>
+      <p id="live-status" class="muted" role="status">Stopped</p>
+    </div>
+
+    <div class="meters">
+      <div class="meter"><span class="label">Input</span><div class="track"><div id="meter-in" class="fill"></div></div><span id="db-in" class="mono">-90 dBFS</span></div>
+      <div class="meter"><span class="label">Output</span><div class="track"><div id="meter-out" class="fill"></div></div><span id="db-out" class="mono">-90 dBFS</span></div>
+    </div>
+
+    <dl class="stats">
+      <div><dt>Algorithmic delay</dt><dd id="s-algo">n/a</dd></div>
+      <div><dt>Block</dt><dd id="s-block">n/a</dd></div>
+      <div><dt>Processing per block</dt><dd id="s-compute">n/a</dd></div>
+      <div><dt>Round trip to engine</dt><dd id="s-rtt">n/a</dd></div>
+      <div><dt>Output buffer</dt><dd id="s-buffer">n/a</dd></div>
+      <div><dt>Dropouts</dt><dd id="s-drop">n/a</dd></div>
+    </dl>
+    <p class="total"><span>Estimated delay, microphone to headphones</span><strong id="s-total" class="mono">n/a</strong></p>
+    <p class="hint">The estimate adds block, engine, round trip and buffer. It leaves out the latency of the audio device itself. Use headphones: speakers feed back into the microphone. Chrome or Edge is required for the 16 kHz audio path. The browser's own noise suppression, echo cancellation and gain control are switched off, so what you hear is the HushWave engine only.</p>
+    <p id="live-error" class="error" role="alert" hidden></p>
+  </section>
+</main>
+
+<footer>
+  <span id="setup">Loading</span>
+  <span>NIT Goa, Department of Electronics and Communication Engineering</span>
+</footer>
+<script src="/web/app.js"></script>
+</body>
+</html>

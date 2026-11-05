@@ -1,0 +1,11 @@
+\begin{tabular}{lrr}
+\toprule
+System & $\Delta$SNR (dB) & $\Delta$segSNR (dB) \\
+\midrule
+B1 spectral subtraction (G1) & 5.12 [4.04, 5.83] & 3.17 \\
+B2 scipy.signal.wiener & 0.64 [0.54, 0.76] & $-$0.57 \\
+B3 noisereduce (default) & $-$2.39 [$-$2.56, $-$2.22] & $-$3.29 \\
+B4 Wiener, plain SNR & 5.08 [4.33, 5.57] & 3.51 \\
+B5 HushWave (full) & 5.53 [4.34, 6.31] & 3.84 \\
+\bottomrule
+\end{tabular}
