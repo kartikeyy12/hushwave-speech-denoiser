@@ -1,39 +1,48 @@
 # Demonstration guide
 
-## Before the session
+## Setup
 
 ```bash
 cd ~/dsp_mini/hushwave
 source .venv/bin/activate
-make examples          # builds examples/ from data/recordings (once)
-make demo-replay       # opens http://localhost:8765/#replay
+make examples          # replay clips from data/recordings (once)
+make demo-live         # http://localhost:8765/#live
 ```
 
-Open the address in **Chrome or Edge on Windows**. WSL2 forwards `localhost` to Windows. If the page does not open,
-run `python scripts/demo.py replay --host 0.0.0.0` and use the WSL address shown by `hostname -I`.
+Open the address in **Chrome or Edge on Windows**. WSL2 forwards `localhost` to Windows. If the page does not open, run
+`python scripts/demo.py live --host 0.0.0.0` and use the WSL address shown by `hostname -I`.
+The board is flashed once (`docs/FIRMWARE.md`). Plug it in before you open the page and close the Arduino Serial Monitor.
 
-For the live mode use `make demo-live`, allow the microphone when the browser asks, and wear headphones.
-Firefox cannot open a 16 kHz audio context, so the live mode refuses to start there.
+## Live mode with the ESP32 (about three minutes)
 
-## Three-minute script
+1. Keep **ESP32** selected and press **Start**. Choose the board's COM port in the browser dialog and allow the microphone. Wear headphones.
+2. Speak, and switch **Enhancement** on and off. Say: the microphone is captured by the browser, every block of 16 ms goes over USB to the
+   ESP32, the firmware denoises it, and the block comes back and plays. The browser does no processing.
+3. Point at the numbers: processing time per block (measured by the board), round trip, algorithmic delay, estimated total delay.
+4. Press **Record**, speak for ten seconds, press **Stop recording**. Two players appear, the original and the denoised signal, aligned in time.
+   They can be downloaded as WAV files.
+5. Stop, then **Save measurements**. Move `mcu_measurements.json` to `results/` so that the next `make report` states the board timing.
 
-1. **Replay, speech in fan noise.** Press Space. Switch with keys 1, 2, 3 between Original, Spectral subtraction, HushWave.
-   Say: the three versions share one level, the spectrogram shows the noise floor in the pauses.
-2. **Point at the table under the plot.** Say: these are measurements of the whole recording, taken in pauses and in speech blocks,
-   because no clean reference exists. The noise reduction is modest, and we report it as it is.
-3. **Live.** Start, speak, toggle Enhancement. Say: the browser only captures and plays audio, the signal goes through the same
-   streaming engine that was evaluated. The delay shown is block plus algorithmic delay plus round trip plus buffer.
-4. **If the microphone fails.** Go back to replay. It needs no audio input.
+**This computer** runs the same engine in Python on the laptop. Use it to show that both give the same audio, or as a fallback if the board is not available.
+
+## Replay mode
+
+`make demo-replay` plays two excerpts of the real recordings in three versions (original, spectral subtraction, HushWave) at one level.
+Space plays and pauses, keys 1 to 3 switch the version, clicking the spectrogram seeks. The table below the plot holds the measurements of the whole recording.
+Replay needs no microphone and no board.
 
 ## If something goes wrong
 
 | Problem | Action |
 |---|---|
-| Page does not open | `python scripts/demo.py replay --host 0.0.0.0`, open the WSL address |
-| Port in use | `python scripts/demo.py replay --port 8800` |
-| Live mode says the browser runs audio at another rate | Use Chrome or Edge |
+| Page does not open | `python scripts/demo.py live --host 0.0.0.0`, open the WSL address |
+| Port 8765 in use | `python scripts/demo.py live --port 8800` |
+| ESP32 button greyed out | The browser has no Web Serial. Use Chrome or Edge on a computer |
+| "The board did not answer" | Close the Serial Monitor and any other program that holds the port, press RST on the board, press Start again. Check that the sketch is flashed |
+| No COM port in the list | Try another cable (some cables carry power only) and the other USB port of the board. Install the driver of the USB-UART chip (CP210x or CH340) |
 | Microphone denied | Click the lock icon in the address bar, allow the microphone, press Start again |
-| Crackling in live mode | Close other audio applications; the interface counts underruns |
+| Browser runs audio at another rate | Use Chrome or Edge |
+| Crackling | Close other audio programs. The page counts underruns, dropped and lost blocks |
 | `examples/manifest.json` missing | `make examples` |
 
-Nothing in the demonstration is retuned. The settings are read from `results/tuning.json`.
+Nothing in the demonstration is retuned. The settings are read from `results/tuning.json`, and the firmware constants are generated from the same file.

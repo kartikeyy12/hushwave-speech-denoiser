@@ -275,33 +275,44 @@ const Replay = (() => {
 
 // -------------------------------------------------------------------- live
 const Live = (() => {
-  const MAX_QUEUE = 8;
   const PREFILL_BLOCKS = 4;
+  const MAX_RECORD_S = 120;
   const state = {
     running: false,
     enhanced: true,
+    kind: "mcu",
+    mix: 1,
     ctx: null,
     stream: null,
     capture: null,
     playback: null,
-    sid: null,
+    engine: null,
     info: null,
-    queue: [],
-    sending: false,
     rtt: 0,
     compute: 0,
     computeMax: 0,
     bufferMs: 0,
     underruns: 0,
-    dropped: 0,
     levelIn: -90,
     levelOut: -90,
     shownIn: -90,
     shownOut: -90,
     frame: 0,
+    recording: false,
+    recIn: [],
+    recOut: [],
+    lastStats: null,
+    urls: [],
   };
 
   const meterWidth = (db) => `${Math.min(100, Math.max(0, ((db + 60) / 60) * 100)).toFixed(1)}%`;
+
+  function levelDb(block) {
+    let sum = 0;
+    for (let i = 0; i < block.length; i++) sum += block[i] * block[i];
+    const rms = Math.sqrt(sum / block.length);
+    return rms <= 0 ? -90 : Math.max(-90, 20 * Math.log10(rms));
+  }
 
   function paint() {
     state.shownIn = Math.max(state.levelIn, state.shownIn - 1.2);
@@ -310,66 +321,83 @@ const Live = (() => {
     $("#meter-out").style.width = meterWidth(state.shownOut);
     $("#db-in").textContent = `${state.levelIn.toFixed(0)} dBFS`;
     $("#db-out").textContent = `${state.levelOut.toFixed(0)} dBFS`;
+    const stats = state.engine.stats;
     $("#s-compute").textContent = `${state.compute.toFixed(2)} ms (max ${state.computeMax.toFixed(2)})`;
     $("#s-rtt").textContent = `${state.rtt.toFixed(1)} ms`;
     $("#s-buffer").textContent = `${state.bufferMs.toFixed(0)} ms`;
-    $("#s-drop").textContent = `${state.underruns} underruns, ${state.dropped} dropped`;
+    $("#s-drop").textContent = `${state.underruns} underruns, ${stats.dropped} dropped, ${stats.lost} lost`;
     const blockMs = (1000 * state.info.block) / state.info.fs;
-    const total = blockMs + state.info.delay_ms + state.rtt + state.bufferMs;
+    const total = blockMs + (1000 * state.info.delay) / state.info.fs + state.rtt + state.bufferMs;
     $("#s-total").textContent = `${total.toFixed(0)} ms`;
+    if (state.recording) {
+      const seconds = (state.recIn.length * state.info.block) / state.info.fs;
+      $("#record").textContent = `Stop recording (${seconds.toFixed(0)} s)`;
+      if (seconds >= MAX_RECORD_S) stopRecording();
+    }
     if (state.running) state.frame = requestAnimationFrame(paint);
   }
 
-  async function pump() {
-    if (state.sending) return;
-    state.sending = true;
-    try {
-      while (state.running && state.queue.length > 0) {
-        const block = state.queue.shift();
-        const started = performance.now();
-        const response = await fetch(`/api/process?sid=${state.sid}&enh=${state.enhanced ? 1 : 0}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/octet-stream" },
-          body: block.buffer,
-        });
-        if (!response.ok) throw new Error(`engine returned HTTP ${response.status}`);
-        const out = new Float32Array(await response.arrayBuffer());
-        const elapsed = performance.now() - started;
-        state.rtt = state.rtt === 0 ? elapsed : 0.95 * state.rtt + 0.05 * elapsed;
-        const compute = Number(response.headers.get("X-Compute-Ms"));
-        state.compute = state.compute === 0 ? compute : 0.95 * state.compute + 0.05 * compute;
-        state.computeMax = Math.max(state.computeMax, compute);
-        state.levelIn = Number(response.headers.get("X-Level-In"));
-        state.levelOut = Number(response.headers.get("X-Level-Out"));
-        state.shownIn = Math.max(state.shownIn, state.levelIn);
-        state.shownOut = Math.max(state.shownOut, state.levelOut);
-        if (state.running) state.playback.port.postMessage(out, [out.buffer]);
-      }
-    } catch (error) {
-      if (state.running) {
-        showError("#live-error", `Stopped: ${error.message}`);
-        stop().catch(() => {});
-      }
-    } finally {
-      state.sending = false;
+  function blend(wet, dry) {
+    const target = state.enhanced ? 1 : 0;
+    if (state.mix === target) return target === 1 ? wet : dry.slice();
+    const out = new Float32Array(wet.length);
+    for (let i = 0; i < out.length; i++) {
+      const w = state.mix + ((target - state.mix) * (i + 1)) / out.length;
+      out[i] = w * wet[i] + (1 - w) * dry[i];
     }
+    state.mix = target;
+    return out;
+  }
+
+  function onOutput(wet, meta, dry) {
+    if (!state.running) return;
+    state.rtt = state.rtt === 0 ? meta.rttMs : 0.95 * state.rtt + 0.05 * meta.rttMs;
+    state.compute = state.compute === 0 ? meta.computeMs : 0.95 * state.compute + 0.05 * meta.computeMs;
+    state.computeMax = Math.max(state.computeMax, meta.computeMs);
+    if (state.recording) {
+      state.recIn.push(dry);
+      state.recOut.push(wet);
+    }
+    const mixed = blend(wet, dry);
+    state.levelOut = levelDb(mixed);
+    state.shownOut = Math.max(state.shownOut, state.levelOut);
+    state.playback.port.postMessage(mixed, [mixed.buffer]);
   }
 
   function describe(error) {
     if (error && error.name === "NotAllowedError") {
-      return "Microphone access was denied. Allow it in the address bar, then start again.";
+      return "Access was denied. Allow the microphone in the address bar, then start again.";
     }
-    if (error && error.name === "NotFoundError") return "No microphone was found.";
+    if (error && error.name === "NotFoundError") {
+      return "No device was selected, or no microphone was found.";
+    }
     return error && error.message ? error.message : String(error);
+  }
+
+  function setBusy(busy) {
+    $("#live-toggle").disabled = busy;
+    for (const button of $("#engines").children) button.disabled = busy || state.running;
   }
 
   async function start() {
     showError("#live-error", "");
-    $("#live-toggle").disabled = true;
-    $("#live-status").textContent = "Starting";
+    clearTakes();
+    setBusy(true);
+    $("#live-status").textContent = state.kind === "mcu" ? "Connecting to the board" : "Starting";
     try {
-      state.info = await getJson("/api/info");
-      const info = state.info;
+      const engine = state.kind === "mcu" ? new HushwaveEngines.McuEngine() : new HushwaveEngines.PythonEngine();
+      engine.onError = (error) => {
+        if (!state.running) return;
+        showError("#live-error", `Stopped: ${describe(error)}`);
+        stop().catch(() => {});
+      };
+      engine.onOutput = onOutput;
+      const info = await engine.open();
+      state.engine = engine;
+      state.info = info;
+      $("#s-engine").textContent = info.name;
+      $("#s-algo").textContent = `${((1000 * info.delay) / info.fs).toFixed(1)} ms (${info.delay} samples)`;
+      $("#s-block").textContent = `${((1000 * info.block) / info.fs).toFixed(1)} ms (${info.block} samples)`;
       state.ctx = new AudioContext({ sampleRate: info.fs, latencyHint: "interactive" });
       if (state.ctx.state === "suspended") await state.ctx.resume();
       if (state.ctx.sampleRate !== info.fs) {
@@ -379,12 +407,8 @@ const Live = (() => {
       state.stream = await navigator.mediaDevices.getUserMedia({
         audio: { channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
       });
-      const session = await getJson("/api/session", { method: "POST" });
-      state.sid = session.sid;
       const source = state.ctx.createMediaStreamSource(state.stream);
-      state.capture = new AudioWorkletNode(state.ctx, "capture", {
-        processorOptions: { block: info.block },
-      });
+      state.capture = new AudioWorkletNode(state.ctx, "capture", { processorOptions: { block: info.block } });
       const mute = state.ctx.createGain();
       mute.gain.value = 0;
       source.connect(state.capture).connect(mute).connect(state.ctx.destination);
@@ -397,21 +421,20 @@ const Live = (() => {
         state.bufferMs = (1000 * event.data.fill) / info.fs;
         state.underruns = event.data.underruns;
       };
-      state.queue = [];
       state.rtt = state.compute = state.computeMax = state.bufferMs = 0;
-      state.underruns = state.dropped = 0;
+      state.underruns = 0;
       state.levelIn = state.levelOut = state.shownIn = state.shownOut = -90;
+      state.mix = state.enhanced ? 1 : 0;
       state.capture.port.onmessage = (event) => {
         if (!state.running) return;
-        state.queue.push(event.data);
-        if (state.queue.length > MAX_QUEUE) {
-          state.queue.shift();
-          state.dropped++;
-        }
-        pump();
+        state.levelIn = levelDb(event.data);
+        state.shownIn = Math.max(state.shownIn, state.levelIn);
+        state.engine.submit(event.data, event.data);
       };
       state.running = true;
       $("#live-toggle").textContent = "Stop";
+      $("#record").hidden = false;
+      $("#save-stats").hidden = true;
       $("#live-status").textContent = "Running";
       paint();
     } catch (error) {
@@ -419,39 +442,155 @@ const Live = (() => {
       await teardown();
       $("#live-status").textContent = "Stopped";
     } finally {
-      $("#live-toggle").disabled = false;
+      state.running ? setBusyRunning() : setBusy(false);
     }
   }
 
+  function setBusyRunning() {
+    $("#live-toggle").disabled = false;
+    for (const button of $("#engines").children) button.disabled = true;
+  }
+
   async function teardown() {
+    const wasRunning = state.running;
     state.running = false;
     cancelAnimationFrame(state.frame);
+    if (state.recording) finishRecording();
     if (state.stream) state.stream.getTracks().forEach((track) => track.stop());
-    if (state.sid) {
-      fetch(`/api/close?sid=${state.sid}`, { method: "POST", keepalive: true }).catch(() => {});
+    if (state.engine) {
+      state.lastStats = { ...state.engine.stats.summary(), engine: state.info ? state.info.name : "" };
+      await state.engine.close().catch(() => {});
     }
     if (state.ctx) await state.ctx.close().catch(() => {});
-    state.stream = state.ctx = state.capture = state.playback = state.sid = null;
-    state.queue = [];
+    state.stream = state.ctx = state.capture = state.playback = state.engine = null;
+    return wasRunning;
   }
 
   async function stop() {
     await teardown();
     $("#live-toggle").textContent = "Start";
     $("#live-status").textContent = "Stopped";
+    $("#record").hidden = true;
     $("#meter-in").style.width = $("#meter-out").style.width = "0";
+    $("#save-stats").hidden = !(state.lastStats && state.lastStats.blocks > 0);
+    setBusy(false);
   }
 
-  function setEnhanced(value) {
-    state.enhanced = value;
-    $("#enhance").setAttribute("aria-checked", String(value));
+  // -- recording: the original and the denoised signal, aligned, as playable and downloadable files
+  function clearTakes() {
+    for (const url of state.urls) URL.revokeObjectURL(url);
+    state.urls = [];
+    $("#takes").hidden = true;
+    $("#takes-list").replaceChildren();
+  }
+
+  function startRecording() {
+    clearTakes();
+    state.recIn = [];
+    state.recOut = [];
+    state.recording = true;
+    $("#record").classList.add("recording");
+  }
+
+  function concat(blocks) {
+    const out = new Float32Array(blocks.length * (blocks.length ? blocks[0].length : 0));
+    blocks.forEach((block, index) => out.set(block, index * block.length));
+    return out;
+  }
+
+  function wavBlob(samples, fs) {
+    const buffer = new ArrayBuffer(44 + 2 * samples.length);
+    const view = new DataView(buffer);
+    const text = (offset, value) => [...value].forEach((c, i) => view.setUint8(offset + i, c.charCodeAt(0)));
+    text(0, "RIFF");
+    view.setUint32(4, 36 + 2 * samples.length, true);
+    text(8, "WAVEfmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, fs, true);
+    view.setUint32(28, 2 * fs, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    text(36, "data");
+    view.setUint32(40, 2 * samples.length, true);
+    for (let i = 0; i < samples.length; i++) {
+      view.setInt16(44 + 2 * i, Math.max(-32768, Math.min(32767, Math.round(samples[i] * 32768))), true);
+    }
+    return new Blob([buffer], { type: "audio/wav" });
+  }
+
+  function addTake(title, blob, filename) {
+    const url = URL.createObjectURL(blob);
+    state.urls.push(url);
+    const row = document.createElement("div");
+    row.className = "take";
+    const label = document.createElement("span");
+    label.textContent = title;
+    const audio = document.createElement("audio");
+    audio.controls = true;
+    audio.src = url;
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.textContent = "Download";
+    row.append(label, audio, link);
+    $("#takes-list").append(row);
+  }
+
+  function finishRecording() {
+    state.recording = false;
+    $("#record").classList.remove("recording");
+    $("#record").textContent = "Record";
+    const info = state.info;
+    const wet = concat(state.recOut);
+    const dry = concat(state.recIn);
+    state.recIn = [];
+    state.recOut = [];
+    if (!info || wet.length <= info.delay) return;
+    // The engine output is delayed by its algorithmic delay: drop it so both files line up.
+    const aligned = wet.subarray(info.delay);
+    const original = dry.subarray(0, aligned.length);
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    addTake("Original", wavBlob(original, info.fs), `original-${stamp}.wav`);
+    addTake("Denoised", wavBlob(aligned, info.fs), `denoised-${stamp}.wav`);
+    $("#takes").hidden = false;
+  }
+
+  function stopRecording() {
+    if (state.recording) finishRecording();
+  }
+
+  function saveStats() {
+    if (!state.lastStats) return;
+    const blob = new Blob([JSON.stringify(state.lastStats, null, 2) + "\n"], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = state.kind === "mcu" ? "mcu_measurements.json" : "python_measurements.json";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  function setKind(kind) {
+    state.kind = kind;
+    for (const button of $("#engines").children) button.setAttribute("aria-pressed", String(button.dataset.kind === kind));
   }
 
   function init() {
+    const hasSerial = Boolean(navigator.serial);
+    setKind(hasSerial ? "mcu" : "python");
+    $("#engines").children[0].disabled = !hasSerial;
+    $("#engine-hint").hidden = hasSerial;
+    for (const button of $("#engines").children) button.addEventListener("click", () => setKind(button.dataset.kind));
     $("#live-toggle").addEventListener("click", () => (state.running ? stop() : start()));
-    $("#enhance").addEventListener("click", () => setEnhanced(!state.enhanced));
+    $("#enhance").addEventListener("click", () => {
+      state.enhanced = !state.enhanced;
+      $("#enhance").setAttribute("aria-checked", String(state.enhanced));
+    });
+    $("#record").addEventListener("click", () => (state.recording ? stopRecording() : startRecording()));
+    $("#save-stats").addEventListener("click", saveStats);
     window.addEventListener("pagehide", () => {
-      if (state.sid) navigator.sendBeacon(`/api/close?sid=${state.sid}`);
+      if (state.engine && state.engine.sid) navigator.sendBeacon(`/api/close?sid=${state.engine.sid}`);
     });
   }
 
@@ -492,8 +631,6 @@ async function main() {
   try {
     const info = await getJson("/api/info");
     $("#setup").textContent = describeSetup(info);
-    $("#s-algo").textContent = `${info.delay_ms.toFixed(1)} ms (${info.delay_samples} samples)`;
-    $("#s-block").textContent = `${((1000 * info.block) / info.fs).toFixed(1)} ms (${info.block} samples)`;
   } catch (_) {
     $("#setup").textContent = "Engine not reachable";
   }

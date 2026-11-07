@@ -1,0 +1,75 @@
+{
+  "firmware": "HushWave B5 float32",
+  "protocol_version": 1,
+  "fs": 16000,
+  "block": 256,
+  "delay_samples": 511,
+  "signals": [
+    {
+      "signal": "voiced bursts in noise",
+      "blocks": 750,
+      "max_abs_difference": 1.5310217886088662e-05,
+      "rms_difference": 8.79279836815959e-06,
+      "snr_db": 75.83907348766382,
+      "finite": true
+    },
+    {
+      "signal": "silence",
+      "blocks": 750,
+      "max_abs_difference": 0.0,
+      "rms_difference": 0.0,
+      "snr_db": null,
+      "finite": true
+    },
+    {
+      "signal": "very quiet noise",
+      "blocks": 750,
+      "max_abs_difference": 1.5258684112837324e-05,
+      "rms_difference": 8.769547047943698e-06,
+      "snr_db": 9.014864637811817,
+      "finite": true
+    },
+    {
+      "signal": "full-scale noise",
+      "blocks": 750,
+      "max_abs_difference": 1.733239280549137e-05,
+      "rms_difference": 8.826083291729208e-06,
+      "snr_db": 83.29352817563787,
+      "finite": true
+    },
+    {
+      "signal": "clipped tone",
+      "blocks": 750,
+      "max_abs_difference": 1.6890665412605532e-05,
+      "rms_difference": 8.837213119967858e-06,
+      "snr_db": 78.3688742826598,
+      "finite": true
+    },
+    {
+      "signal": "impulses",
+      "blocks": 750,
+      "max_abs_difference": 1.5257901927212894e-05,
+      "rms_difference": 3.758491836457197e-06,
+      "snr_db": 68.99110014804614,
+      "finite": true
+    },
+    {
+      "signal": "level step",
+      "blocks": 750,
+      "max_abs_difference": 5.1055309420349956e-05,
+      "rms_difference": 9.002678465075289e-06,
+      "snr_db": 58.914255449197555,
+      "finite": true
+    }
+  ],
+  "max_abs_difference": 5.1055309420349956e-05,
+  "pcm_step": 3.0517578125e-05,
+  "engine_bytes": 31832,
+  "link_bytes": 4160,
+  "uplink_bytes_per_block": 520,
+  "downlink_bytes_per_block": 524,
+  "uplink_bytes_per_second": 32500.0,
+  "downlink_bytes_per_second": 32750.0,
+  "baud": 921600,
+  "baud_bytes_per_second": 92160.0
+}

@@ -30,16 +30,19 @@ make experiments-quick    # 10-minute rehearsal into results/quick (not a result
 TEST is evaluated once per frozen setting (`results/tuning.json`); a second run is refused
 unless `--force-retest` is passed, and every evaluation is logged in `results.json`.
 
-## Demonstration (M9)
+## Real-time demonstration
 
 ```bash
+make firmware-check  # compile the firmware for this computer and compare it with the Python engine
+make demo-live       # microphone through the ESP32-S3 (Chrome or Edge, headphones)
 make examples        # replay clips from data/recordings, written to examples/
 make demo-replay     # original, spectral subtraction and HushWave, switchable during playback
-make demo-live       # microphone through the streaming engine (Chrome or Edge, headphones)
 ```
 
-The browser is only the audio device. All processing runs in the streaming engine with the frozen settings of
-`results/tuning.json`. See `docs/DEMO.md` for the session script and troubleshooting.
+The browser records the microphone and plays the result. The denoiser itself runs in the firmware on the ESP32-S3
+(`firmware/hushwave_esp32/`, flashing steps in `docs/FIRMWARE.md`, serial protocol in `docs/PROTOCOL.md`). The page can also use the
+same engine in Python on the computer for comparison. All settings are those of `results/tuning.json`; the firmware constants are
+generated from it. See `docs/DEMO.md` for the session script and troubleshooting.
 
 ## Report (M10)
 
@@ -53,6 +56,7 @@ qualitative statements of the text against the data and stops when one no longer
 ## Layout
 
 - `src/hushwave/`: the library
+- `firmware/`: ESP32-S3 firmware and its test rig
 - `demo/web/`: the demonstration interface
 - `scripts/`: command-line tools (verification, data, experiments, demonstration, report)
 - `tests/`: pytest suite

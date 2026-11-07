@@ -11,7 +11,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 WEB = ROOT / "demo" / "web"
-FILES = ("index.html", "style.css", "app.js", "worklets.js")
+FILES = ("index.html", "style.css", "app.js", "worklets.js", "protocol.js", "engines.js")
 
 
 @pytest.mark.parametrize("name", FILES)
@@ -46,7 +46,7 @@ def test_worklet_processors_match_the_names_the_page_uses() -> None:
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
-@pytest.mark.parametrize("name", ["app.js", "worklets.js"])
+@pytest.mark.parametrize("name", ["app.js", "worklets.js", "protocol.js", "engines.js"])
 def test_javascript_parses(name: str) -> None:
     result = subprocess.run(
         ["node", "--check", str(WEB / name)], capture_output=True, text=True, check=False

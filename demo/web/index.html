@@ -53,6 +53,10 @@
 
   <section id="panel-live" role="tabpanel" aria-labelledby="tab-live" hidden>
     <div class="row">
+      <div id="engines" class="segmented" role="group" aria-label="Processing engine">
+        <button type="button" data-kind="mcu" aria-pressed="true">ESP32</button>
+        <button type="button" data-kind="python" aria-pressed="false">This computer</button>
+      </div>
       <button type="button" id="live-toggle" class="primary">Start</button>
       <div class="switch-row">
         <button type="button" id="enhance" class="switch" role="switch" aria-checked="true" aria-labelledby="enhance-label"></button>
@@ -60,13 +64,26 @@
       </div>
       <p id="live-status" class="muted" role="status">Stopped</p>
     </div>
+    <p id="engine-hint" class="hint" hidden>This browser cannot talk to a serial device. Use Chrome or Edge to run the denoiser on the ESP32.</p>
 
     <div class="meters">
       <div class="meter"><span class="label">Input</span><div class="track"><div id="meter-in" class="fill"></div></div><span id="db-in" class="mono">-90 dBFS</span></div>
       <div class="meter"><span class="label">Output</span><div class="track"><div id="meter-out" class="fill"></div></div><span id="db-out" class="mono">-90 dBFS</span></div>
     </div>
 
+    <div class="row actions">
+      <button type="button" id="record" class="secondary" hidden>Record</button>
+      <button type="button" id="save-stats" class="secondary" hidden>Save measurements</button>
+    </div>
+
+    <div id="takes" hidden>
+      <h2>Recording</h2>
+      <p class="hint">Both files start at the same instant. The denoised file is shifted back by the algorithmic delay.</p>
+      <div id="takes-list"></div>
+    </div>
+
     <dl class="stats">
+      <div class="wide"><dt>Engine</dt><dd id="s-engine">Not started</dd></div>
       <div><dt>Algorithmic delay</dt><dd id="s-algo">n/a</dd></div>
       <div><dt>Block</dt><dd id="s-block">n/a</dd></div>
       <div><dt>Processing per block</dt><dd id="s-compute">n/a</dd></div>
@@ -75,7 +92,7 @@
       <div><dt>Dropouts</dt><dd id="s-drop">n/a</dd></div>
     </dl>
     <p class="total"><span>Estimated delay, microphone to headphones</span><strong id="s-total" class="mono">n/a</strong></p>
-    <p class="hint">The estimate adds block, engine, round trip and buffer. It leaves out the latency of the audio device itself. Use headphones: speakers feed back into the microphone. Chrome or Edge is required for the 16 kHz audio path. The browser's own noise suppression, echo cancellation and gain control are switched off, so what you hear is the HushWave engine only.</p>
+    <p class="hint">The estimate adds block, algorithmic delay, round trip and buffer. It leaves out the latency of the audio device itself. Use headphones, because speakers feed back into the microphone. The browser's own noise suppression, echo cancellation and gain control are switched off, so what you hear is the HushWave engine only. With the ESP32 selected, every sample is processed by the firmware on the board.</p>
     <p id="live-error" class="error" role="alert" hidden></p>
   </section>
 </main>
@@ -84,6 +101,8 @@
   <span id="setup">Loading</span>
   <span>NIT Goa, Department of Electronics and Communication Engineering</span>
 </footer>
+<script src="/web/protocol.js"></script>
+<script src="/web/engines.js"></script>
 <script src="/web/app.js"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@ VENV := .venv
 PY := $(VENV)/bin/python
 PYTHON ?= $(shell bash scripts/find_python.sh)
 
-.PHONY: setup data data-check test lint typecheck docs d1-figure perf experiments experiments-quick figures results-doc examples report demo-live demo-replay verify all clean
+.PHONY: setup data data-check test lint typecheck docs d1-figure perf experiments experiments-quick figures results-doc examples firmware-params firmware-check firmware-test report demo-live demo-replay verify all clean
 
 setup:
 	@test -n "$(PYTHON)" || { echo "No suitable Python found. Install one or pass PYTHON=/path/to/python"; exit 1; }
@@ -65,6 +65,16 @@ demo-replay:
 
 demo-live:
 	$(PY) scripts/demo.py live
+
+# Firmware: constants from the tuning file, and the comparison with the Python engine (needs g++).
+firmware-params:
+	$(PY) scripts/gen_firmware_params.py
+
+firmware-check:
+	$(PY) scripts/check_firmware.py
+
+firmware-test:
+	$(PY) -m pytest tests/test_mcu.py tests/test_js.py -q
 
 # M10: tables and numbers from results.json, docs/VIVA.md, then report/hushwave_report.pdf.
 # Needs pdflatex: sudo apt install texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended

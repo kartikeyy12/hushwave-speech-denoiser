@@ -104,17 +104,42 @@ family improves STOI here, and B3 changes it by @@StoiBthree@@.
 
 Written in the project: FFT, windows, STFT and overlap-add, biquad, noise trackers, gain rules, Welch estimator, SNR,
 segmental SNR, noise reduction, speech distortion, log-spectral distance, musical-noise ratio, the experiment runner,
-bootstrap intervals, the streaming engine and the demo server. External: NumPy and SciPy for arrays and special functions, soundfile for files,
+bootstrap intervals, the streaming engine, the C++ firmware with its serial protocol, and the demo server. External: NumPy and SciPy for arrays and special functions, soundfile for files,
 Matplotlib for plots, `pesq` and `pystoi` for the two perceptual metrics, `noisereduce` and `scipy.signal.wiener` as
 comparison systems, `scipy.stats.wilcoxon` for the test statistic.
+
+## The microcontroller
+
+**What runs on the ESP32-S3?** All the signal processing: framing, FFT, noise tracking, gain, inverse FFT and overlap-add. The computer
+only records, sends blocks of 256 samples, and plays what comes back. The firmware is C++ in single precision, @@FwEngineKb@@ kB of RAM.
+
+**Why the ESP32-S3?** It has two cores at 240 MHz, a single-precision floating point unit, and 512 kB of RAM. The engine needs one block of 16 ms
+to be processed in less than 16 ms, and the board reports the measured time for every block.
+
+**Why USB and not Wi-Fi?** Browsers allow microphone access only on secure origins (HTTPS or localhost), and a page served by the board over
+plain Wi-Fi is not one. Wi-Fi also adds jitter to the delay, which a real-time stream has to absorb with a bigger buffer. USB has a stable delay and the page
+can be served from the computer.
+
+**How do you know the firmware is correct?** The same C++ sources are compiled for a computer and driven through the serial protocol. On @@FwSignals@@ test
+signals (@@FwBlocks@@ blocks) the output differs from the Python engine by at most @@FwMaxSteps@@ steps of 16-bit audio (@@FwMaxDb@@ dB relative to full scale). Rounding
+alone gives half a step.
+
+**What happens when a frame is damaged?** Every frame has a CRC-16. A frame with a wrong CRC is dropped, the parser looks for the next sync marker, and the
+page treats the block as lost after 500 ms. One block of 16 ms is lost and the stream continues.
+
+**How loaded is the link?** About @@FwUpKb@@ kB/s upstream and @@FwDownKb@@ kB/s downstream, @@FwLoad@@ percent of the capacity at @@FwBaud@@ baud. Four blocks are in flight, so the
+transmission time overlaps with the computation.
+
+**What limits the audio quality?** The algorithm. The transport adds 16-bit rounding only, which is far below the noise of any room. The limits of the
+algorithm are measured and listed above.
 
 ## The demo
 
 Replay mode plays two excerpts of the real recordings in three versions with one level and switches without a gap.
-Live mode sends the microphone through the same streaming engine and shows the delay and processing time. The browser is only
-the audio device. If the microphone fails, replay mode needs no audio input.
+Live mode sends the microphone through the ESP32 (or, for comparison, the same engine in Python on the computer) and shows the delay and the processing
+time. The browser is only the audio device. If the microphone or the board fails, replay mode needs neither.
 
 ## If asked what you would do with more time
 
 Add a musical-noise term to the tuning objective, a detector that treats transients as noise, longer recordings with more
-pauses, and a fixed-point port to a microcontroller.
+pauses, and a link over Wi-Fi with a secure page.

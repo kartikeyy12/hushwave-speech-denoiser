@@ -3,10 +3,30 @@
 from __future__ import annotations
 
 import argparse
+import subprocess
 import sys
 import webbrowser
+from pathlib import Path
 
 from hushwave.demo_server import default_app, make_server
+
+
+def in_wsl(version_file: Path = Path("/proc/version")) -> bool:
+    try:
+        return "microsoft" in version_file.read_text(encoding="utf-8").lower()
+    except OSError:
+        return False
+
+
+def open_browser(url: str) -> None:
+    """Open the page in the default browser; under WSL that is the Windows browser."""
+    if in_wsl():
+        try:
+            subprocess.run(["explorer.exe", url], check=False, timeout=15, capture_output=True)
+            return
+        except (OSError, subprocess.SubprocessError):
+            pass
+    webbrowser.open(url)
 
 
 def main(argv: list[str]) -> int:
@@ -32,7 +52,7 @@ def main(argv: list[str]) -> int:
     url = f"http://localhost:{args.port}/#{args.mode}"
     print(f"HushWave demo at {url}   (Ctrl+C to stop)")
     if not args.no_browser:
-        webbrowser.open(url)
+        open_browser(url)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

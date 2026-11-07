@@ -8,7 +8,20 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 EM, EN = chr(0x2014), chr(0x2013)
-SUFFIXES = {".py", ".md", ".tex", ".js", ".css", ".html", ".toml", ".txt", ".json"}
+SUFFIXES = {
+    ".py",
+    ".md",
+    ".tex",
+    ".js",
+    ".css",
+    ".html",
+    ".toml",
+    ".txt",
+    ".json",
+    ".cpp",
+    ".h",
+    ".ino",
+}
 SKIP_DIRS = {".venv", ".git", "data", "node_modules", "__pycache__", ".mypy_cache", ".ruff_cache"}
 SKIP_PREFIXES = ("results/", "report/build/", "examples/")
 

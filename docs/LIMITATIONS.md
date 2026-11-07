@@ -1,6 +1,6 @@
 # Limitations
 
-These are reported in the report (Section 7) and repeated here so that nothing is hidden in a long document.
+These are reported in the report (Section 5.7) and repeated here so that nothing is hidden in a long document.
 
 ## What the results support
 
@@ -26,6 +26,8 @@ These are reported in the report (Section 7) and repeated here so that nothing i
 
 ## Demonstration limits
 
-- The live mode needs Chrome or Edge, a microphone, and headphones. Firefox cannot open a 16 kHz audio context.
+- The live mode with the ESP32 needs Chrome or Edge on a computer (Web Serial), a microphone, and headphones. Firefox cannot open a 16 kHz audio context or a serial port.
+- The sketch is checked on a computer against a stand-in for the Arduino header. Compile it once for the board before the demonstration.
+- The processing time on the board is measured by the page during a session and saved by the user; the report states it only when `results/mcu_measurements.json` exists.
 - The estimated delay in the live interface leaves out the latency of the audio device.
 - The replay clips are excerpts of two recordings and are not a measurement. The numbers beside them are measurements of the whole recordings.

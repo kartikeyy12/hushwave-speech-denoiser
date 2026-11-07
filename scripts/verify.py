@@ -79,6 +79,20 @@ def check_manifest(root: Path = ROOT) -> Outcome:
     return Outcome("data manifest", "PASS", "valid, speaker-disjoint split", "")
 
 
+def write_summary(outcomes: list[Outcome], root: Path = ROOT) -> None:
+    """Record the test count and coverage of a passing run for the report."""
+    tests = next((o for o in outcomes if o.name.startswith("tests")), None)
+    if tests is None:
+        return
+    passed = re.search(r"(\d+) passed", tests.log)
+    coverage = re.search(r"Total coverage: ([\d.]+)%", tests.log)
+    if passed is None or coverage is None:
+        return
+    summary = {"tests_passed": int(passed.group(1)), "coverage_percent": float(coverage.group(1))}
+    path = root / "results" / "verification.json"
+    path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+
+
 def main() -> int:
     python = sys.executable
     outcomes = [
@@ -115,6 +129,8 @@ def main() -> int:
         print(outcome.log)
 
     overall = "FAIL" if failed else "PASS"
+    if not failed:
+        write_summary(outcomes)
     print(f"\nOVERALL: {overall}")
     return 1 if failed else 0
 

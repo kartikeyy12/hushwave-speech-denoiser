@@ -9,6 +9,9 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
+from types import ModuleType
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -75,3 +78,51 @@ def test_demo_script_reports_a_busy_port() -> None:
         run = _run("scripts/demo.py", "live", "--no-browser", "--port", str(port))
     assert run.returncode == 1
     assert "cannot listen" in run.stderr
+
+
+def _demo_module() -> ModuleType:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("demo_script", ROOT / "scripts" / "demo.py")
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_wsl_detection(tmp_path: Path) -> None:
+    demo = _demo_module()
+    wsl = tmp_path / "version"
+    wsl.write_text("Linux version 5.15 (Microsoft-standard-WSL2)", encoding="utf-8")
+    plain = tmp_path / "plain"
+    plain.write_text("Linux version 6.8 generic", encoding="utf-8")
+    assert demo.in_wsl(wsl) is True
+    assert demo.in_wsl(plain) is False
+    assert demo.in_wsl(tmp_path / "missing") is False
+
+
+def test_browser_opens_through_windows_under_wsl(monkeypatch: pytest.MonkeyPatch) -> None:
+    demo = _demo_module()
+    calls: list[object] = []
+    monkeypatch.setattr(demo, "in_wsl", lambda: True)
+    monkeypatch.setattr(demo.subprocess, "run", lambda *a, **k: calls.append(a[0]))
+    monkeypatch.setattr(demo.webbrowser, "open", lambda url: calls.append(("web", url)))
+    demo.open_browser("http://localhost:1/#live")
+    assert calls == [["explorer.exe", "http://localhost:1/#live"]]
+
+
+def test_browser_falls_back_to_the_standard_library(monkeypatch: pytest.MonkeyPatch) -> None:
+    demo = _demo_module()
+    calls: list[object] = []
+    monkeypatch.setattr(demo, "in_wsl", lambda: False)
+    monkeypatch.setattr(demo.webbrowser, "open", lambda url: calls.append(url))
+    demo.open_browser("http://localhost:1/#live")
+    assert calls == ["http://localhost:1/#live"]
+
+    def broken(*args: object, **kwargs: object) -> None:
+        raise FileNotFoundError("explorer.exe")
+
+    monkeypatch.setattr(demo, "in_wsl", lambda: True)
+    monkeypatch.setattr(demo.subprocess, "run", broken)
+    demo.open_browser("http://localhost:2/#live")
+    assert calls[-1] == "http://localhost:2/#live"

@@ -104,7 +104,7 @@ def _scene(results: Json, name: str) -> Json:
 
 
 # ---------------------------------------------------------------------- claims
-def check_claims(results: Json) -> list[str]:
+def check_claims(results: Json, firmware: Json | None = None) -> list[str]:
     """Every qualitative statement of report.tex, checked; returns the ones that fail."""
     _, table = _primary(results)
     overall = table["overall"]
@@ -184,11 +184,22 @@ def check_claims(results: Json) -> list[str]:
         _mean(own, "B5", "delta_snr_db") > _mean(own, "B1", "delta_snr_db"),
         "B5 is above B1 on the own-voice corpus",
     )
+    if firmware is not None:
+        steps = float(firmware["max_abs_difference"]) / float(firmware["pcm_step"])
+        require(steps < 2.0, "the firmware agrees with the reference within two 16-bit steps")
+        require(all(r["finite"] for r in firmware["signals"]), "the firmware output is finite")
+        require(
+            float(firmware["uplink_bytes_per_second"])
+            < 0.5 * float(firmware["baud_bytes_per_second"]),
+            "the serial link is loaded below half",
+        )
     return failed
 
 
 # --------------------------------------------------------------------- numbers
-def numbers(results: Json, performance: Json, tuning: Json) -> dict[str, str]:
+def numbers(
+    results: Json, performance: Json, tuning: Json, firmware: Json | None = None
+) -> dict[str, str]:
     corpus, table = _primary(results)
     by_snr, by_noise = table["by_snr"], table["by_noise"]
     test = results["test"]
@@ -326,6 +337,23 @@ def numbers(results: Json, performance: Json, tuning: Json) -> dict[str, str]:
     v["StoiVersion"] = str(meta["packages"]["pystoi"])
     v["NoisereduceVersion"] = str(meta["packages"]["noisereduce"])
     v["TuningHash"] = str(results["protocol"]["test_history"][0]["tuning_sha256"])[:16]
+    if firmware is not None:
+        step = float(firmware["pcm_step"])
+        worst = float(firmware["max_abs_difference"])
+        voiced = next(r for r in firmware["signals"] if r["signal"].startswith("voiced"))
+        up_rate = float(firmware["uplink_bytes_per_second"])
+        v["FwSignals"] = str(len(firmware["signals"]))
+        v["FwBlocks"] = str(sum(int(r["blocks"]) for r in firmware["signals"]))
+        v["FwMaxSteps"] = f"{worst / step:.1f}"
+        v["FwMaxDb"] = tn(20 * math.log10(worst), 0)
+        v["FwVoicedSnr"] = f"{float(voiced['snr_db']):.0f}"
+        v["FwEngineKb"] = f"{int(firmware['engine_bytes']) / 1024:.0f}"
+        v["FwUpKb"] = f"{float(firmware['uplink_bytes_per_second']) / 1000:.1f}"
+        v["FwDownKb"] = f"{float(firmware['downlink_bytes_per_second']) / 1000:.1f}"
+        v["FwLoad"] = f"{100 * up_rate / float(firmware['baud_bytes_per_second']):.0f}"
+        v["FwBaud"] = str(int(firmware["baud"]))
+        v["FwUpBytes"] = str(int(firmware["uplink_bytes_per_block"]))
+        v["FwDownBytes"] = str(int(firmware["downlink_bytes_per_block"]))
     return v
 
 
@@ -339,145 +367,83 @@ def numbers_tex(values: dict[str, str]) -> str:
 
 
 # ---------------------------------------------------------------------- tables
+LABELS = {
+    "B1": "spectral subtraction",
+    "B2": "scipy Wiener",
+    "B3": "noisereduce",
+    "B4": "Wiener, plain SNR",
+    "B5": "HushWave",
+}
+
+
 def _tabular(spec: str, header: Sequence[str], rows: Sequence[Sequence[str]]) -> str:
-    lines = [f"\\begin{{tabular}}{{{spec}}}", "\\toprule", " & ".join(header) + r" \\", "\\midrule"]
+    """A table in the report style: light-blue header row, thin horizontal rules only."""
+    head = " & ".join(f"\\textbf{{{h}}}" for h in header)
+    lines = [
+        f"\\begin{{tabular}}{{{spec}}}",
+        "\\hline",
+        f"\\rowcolor{{headfill}} {head} \\\\ \\hline",
+    ]
     for row in rows:
-        lines.append(" & ".join(row) + r" \\")
-    lines += ["\\bottomrule", "\\end{tabular}"]
+        lines.append(" & ".join(row) + " \\\\ \\hline")
+    lines.append("\\end{tabular}")
     return "\n".join(lines) + "\n"
 
 
-def table_main(results: Json) -> str:
+def table_results(results: Json) -> str:
     _, table = _primary(results)
-    labels = _labels(results)
+    overall = table["overall"]
     rows = [
         [
-            f"{name} {tex_text(labels[name])}",
-            ci(_entry(table["overall"], name, "delta_snr_db")),
-            ci(_entry(table["overall"], name, "delta_segsnr_db")),
-            ci(_entry(table["overall"], name, "delta_pesq")),
+            f"{name} {LABELS[name]}",
+            ci(_entry(overall, name, "delta_snr_db")),
+            tn(_mean(overall, name, "delta_segsnr_db")),
+            tn(_mean(overall, name, "delta_pesq")),
+            tn(_mean(overall, name, "delta_stoi"), 3),
+            tn(_mean(overall, name, "noise_reduction_db"), 1),
+            tn(_mean(overall, name, "musical_noise_ratio")),
         ]
         for name in SYSTEMS
     ]
-    return _tabular(
-        "lrrr", ["System", r"$\Delta$SNR (dB)", r"$\Delta$segSNR (dB)", r"$\Delta$PESQ"], rows
-    )
-
-
-def table_other(results: Json) -> str:
-    _, table = _primary(results)
-    labels = _labels(results)
-    metrics = (
-        ("noise_reduction_db", 1),
-        ("speech_distortion_db", 1),
-        ("delta_lsd_db", 2),
-        ("musical_noise_ratio", 2),
-        ("delta_stoi", 3),
-    )
-    rows = [
-        [f"{name} {tex_text(labels[name])}"]
-        + [tn(_mean(table["overall"], name, m), d) for m, d in metrics]
-        for name in SYSTEMS
+    header = [
+        "System",
+        r"$\Delta$SNR (dB) [95\,\% CI]",
+        r"$\Delta$segSNR (dB)",
+        r"$\Delta$PESQ",
+        r"$\Delta$STOI",
+        "NR (dB)",
+        "MNR",
     ]
-    header = ["System", "NR (dB)", "SD (dB)", r"$\Delta$LSD (dB)", "MNR", r"$\Delta$STOI"]
-    return _tabular("lrrrrr", header, rows)
+    return _tabular("lrrrrrr", header, rows)
 
 
-def table_by_snr(results: Json) -> str:
-    _, table = _primary(results)
+def table_data(manifest: Json) -> str:
+    def row(label: str, items: list[Json]) -> list[str]:
+        speakers = len({i["speaker_id"] for i in items})
+        minutes = sum(float(i["duration_s"]) for i in items) / 60.0
+        return [label, str(speakers), str(len(items)), f"{minutes:.1f}"]
+
     rows = [
-        [tn(float(snr), 0)] + [tn(_mean(cells, s, "delta_snr_db")) for s in SYSTEMS]
-        for snr, cells in sorted(table["by_snr"].items(), key=lambda kv: float(kv[0]))
+        row("Development (tuning)", manifest["dev"]),
+        row("Test (held out)", manifest["test"]),
     ]
-    return _tabular("rrrrrr", ["Input SNR (dB)", "B1", "B2", "B3", "B4", "B5"], rows)
-
-
-def table_by_noise(results: Json) -> str:
-    _, table = _primary(results)
-    rows = []
-    for noise, cells in sorted(table["by_noise"].items()):
-        rows.append(
-            [tex_text(noise)]
-            + [tn(_mean(cells, s, "delta_snr_db"), 1) for s in ("B1", "B4", "B5")]
-            + [
-                tn(_mean(cells, "B5", "noise_reduction_db"), 1),
-                tn(_mean(cells, "B5", "delta_pesq")),
-            ]
-        )
-    header = ["Noise", "B1", "B4", "B5", "B5 NR (dB)", r"B5 $\Delta$PESQ"]
-    return _tabular("lrrrrr", header, rows)
-
-
-def table_ablation(results: Json) -> str:
-    _, table = _primary(results)
-    labels = _labels(results)
-    rows = [
-        [
-            "B5 (full system)",
-            ci(_entry(table["overall"], "B5", "delta_snr_db")),
-            tn(_mean(table["overall"], "B5", "delta_segsnr_db")),
-            tn(_mean(table["overall"], "B5", "noise_reduction_db"), 1),
-            "",
-        ]
-    ]
-    for system in results["test"]["systems"]:
-        name = system["name"]
-        if not name.startswith("A:"):
-            continue
-        row = _test(results, "tests_vs_ablations", name, "delta_snr_db")
-        rows.append(
-            [
-                tex_text(labels[name]),
-                ci(_entry(table["overall"], name, "delta_snr_db")),
-                tn(_mean(table["overall"], name, "delta_segsnr_db")),
-                tn(_mean(table["overall"], name, "noise_reduction_db"), 1),
-                pval(row["p_utterance_level_holm"]),
-            ]
-        )
-    header = ["Variant", r"$\Delta$SNR (dB)", r"$\Delta$segSNR (dB)", "NR (dB)", r"Holm $p$"]
-    return _tabular("lrrrr", header, rows)
-
-
-def table_tests(results: Json) -> str:
-    metrics = (
-        ("delta_snr_db", r"$\Delta$SNR"),
-        ("delta_segsnr_db", r"$\Delta$segSNR"),
-        ("noise_reduction_db", "NR"),
-        ("delta_pesq", r"$\Delta$PESQ"),
-        ("delta_stoi", r"$\Delta$STOI"),
-    )
-    rows = []
-    for vs in ("B1", "B4"):
-        for metric, label in metrics:
-            row = _test(results, "tests_vs_baselines", vs, metric)
-            rows.append(
-                [
-                    f"B5 vs {vs}",
-                    label,
-                    tn(row["median_diff"], 3),
-                    pval(row["p_utterance_level_holm"]),
-                    "yes" if row["p_utterance_level_holm"] < HOLM_ALPHA else "no",
-                ]
-            )
-    return _tabular(
-        "llrrr", ["Comparison", "Metric", "Median difference", r"Holm $p$", "Significant"], rows
-    )
+    return _tabular("lrrr", ["Set", "Speakers", "Utterances", "Speech (min)"], rows)
 
 
 def table_real(results: Json) -> str:
-    labels = _labels(results)
     rows: list[list[str]] = []
-    for scene, title in (
+    scenes = (
         ("speech_in_fan", "Speech in fan noise"),
         ("speech_in_corridor", "Speech in corridor noise"),
-    ):
+    )
+    for scene, title in scenes:
         systems = _scene(results, scene)["systems"]
         rows.append([r"\multicolumn{5}{l}{\emph{" + title + "}}"])
-        for name in ("B1", "B2", "B3", "B4", "B5"):
+        for name in SYSTEMS:
             s = systems[name]
             rows.append(
                 [
-                    f"{name} {tex_text(labels[name])}",
+                    f"{name} {LABELS[name]}",
                     tn(s["noise_reduction_pause_db"], 1),
                     tn(s["residual_pause_dbfs"], 1),
                     tn(s["speech_level_change_db"], 1),
@@ -488,55 +454,48 @@ def table_real(results: Json) -> str:
     return _tabular("lrrrr", header, rows)
 
 
-def table_dev(results: Json) -> str:
-    scores = results["tuning"]["scores"]
-    labels = _labels(results)
-    rows = [[f"{name} {tex_text(labels[name])}", tn(scores[name])] for name in SYSTEMS]
-    return _tabular("lr", ["System", r"DEV objective $J$ (dB)"], rows)
-
-
-def table_own(results: Json) -> str:
-    own = results["test"]["tables"]["own"]["overall"]
-    labels = _labels(results)
+def table_firmware(firmware: Json) -> str:
+    step = float(firmware["pcm_step"])
     rows = [
         [
-            f"{name} {tex_text(labels[name])}",
-            ci(_entry(own, name, "delta_snr_db")),
-            tn(_mean(own, name, "delta_segsnr_db")),
+            tex_text(r["signal"]),
+            tn(float(r["max_abs_difference"]) / step, 2),
+            tn(float(r["rms_difference"]) / step, 2),
         ]
-        for name in SYSTEMS
+        for r in firmware["signals"]
     ]
-    return _tabular("lrr", ["System", r"$\Delta$SNR (dB)", r"$\Delta$segSNR (dB)"], rows)
+    header = ["Test signal (12 s each)", "Largest difference", "RMS difference"]
+    return _tabular("lrr", header, rows)
 
 
-def table_perf(performance: Json) -> str:
-    rows = [
-        [
-            str(r["block"]),
-            f"{1000.0 * r['block'] / 16000:.1f}",
-            f"{r['real_time_factor']:.4f}",
-            f"{r['worst_block_ms']:.2f}",
-            f"{r['block_budget_ms']:.1f}",
-        ]
-        for r in performance["timing"]
-    ]
-    header = [
-        "Block (samples)",
-        "Block (ms)",
-        "Real-time factor",
-        "Worst block (ms)",
-        "Budget (ms)",
-    ]
-    return _tabular("rrrrr", header, rows)
+def fragment_verification(path: Path) -> str:
+    if path.is_file():
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return (
+            f"The verification step runs {int(data['tests_passed'])} automated tests with "
+            f"{float(data['coverage_percent']):.1f}\\,\\% line coverage of the Python package "
+            "and passes.\n"
+        )
+    return "The verification step runs the automated tests, the type checks and the style checks.\n"
 
 
-def table_sqnr() -> str:
-    levels = (0.0, 20.0, 40.0, 60.0)
-    rows = [
-        [tn(level, 0)] + [tn(quantization_sqnr_db(b, level), 1) for b in (8, 12, 16)]
-        for level in levels
-    ]
-    return _tabular("rrrr", ["Level below full scale (dB)", "8 bit", "12 bit", "16 bit"], rows)
+def fragment_measured(path: Path) -> str:
+    if not path.is_file():
+        return (
+            "The firmware measures the processing time of every block and reports it to the "
+            "interface, which shows the current value while the system runs.\n"
+        )
+    data = json.loads(path.read_text(encoding="utf-8"))
+    compute, trip = data["computeMs"], data["roundTripMs"]
+    return (
+        f"Measured on the board during a live session of {int(data['blocks'])} blocks, the "
+        f"processing time of one block was {compute['mean']:.2f}\\,ms on average (95th "
+        f"percentile {compute['p95']:.2f}\\,ms, largest {compute['max']:.2f}\\,ms) against a "
+        "block period of 16\\,ms. "
+        f"The round trip through the serial link averaged {trip['mean']:.1f}\\,ms "
+        f"(largest {trip['max']:.1f}\\,ms). {int(data['dropped'])} blocks were dropped before "
+        f"sending and {int(data['lost'])} were lost on the way.\n"
+    )
 
 
 def write_all(
@@ -544,27 +503,30 @@ def write_all(
     performance_path: Path = ROOT / "results" / "engine_performance.json",
     tuning_path: Path = ROOT / "results" / "tuning.json",
     out_dir: Path = GENERATED,
+    firmware_path: Path = ROOT / "results" / "firmware_check.json",
+    measurements_path: Path = ROOT / "results" / "mcu_measurements.json",
+    verification_path: Path = ROOT / "results" / "verification.json",
+    manifest_path: Path = ROOT / "results" / "split_manifest.json",
 ) -> list[Path]:
     results = json.loads(results_path.read_text(encoding="utf-8"))
     performance = json.loads(performance_path.read_text(encoding="utf-8"))
     tuning = json.loads(tuning_path.read_text(encoding="utf-8"))
-    failed = check_claims(results)
+    if not firmware_path.is_file():
+        raise FileNotFoundError(f"{firmware_path} is missing; run: make firmware-check")
+    firmware = json.loads(firmware_path.read_text(encoding="utf-8"))
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    failed = check_claims(results, firmware)
     if failed:
         raise ClaimError("report text no longer matches the results:\n- " + "\n- ".join(failed))
     out_dir.mkdir(parents=True, exist_ok=True)
     files = {
-        "numbers.tex": numbers_tex(numbers(results, performance, tuning)),
-        "tab_main.tex": table_main(results),
-        "tab_other.tex": table_other(results),
-        "tab_by_snr.tex": table_by_snr(results),
-        "tab_by_noise.tex": table_by_noise(results),
-        "tab_ablation.tex": table_ablation(results),
-        "tab_tests.tex": table_tests(results),
+        "numbers.tex": numbers_tex(numbers(results, performance, tuning, firmware)),
+        "tab_data.tex": table_data(manifest),
+        "tab_results.tex": table_results(results),
         "tab_real.tex": table_real(results),
-        "tab_dev.tex": table_dev(results),
-        "tab_own.tex": table_own(results),
-        "tab_perf.tex": table_perf(performance),
-        "tab_sqnr.tex": table_sqnr(),
+        "tab_firmware.tex": table_firmware(firmware),
+        "verification.tex": fragment_verification(verification_path),
+        "mcu_measured.tex": fragment_measured(measurements_path),
     }
     paths = []
     for name, text in files.items():
@@ -608,10 +570,16 @@ def write_viva(
     results = json.loads(results_path.read_text(encoding="utf-8"))
     performance = json.loads(performance_path.read_text(encoding="utf-8"))
     tuning = json.loads(tuning_path.read_text(encoding="utf-8"))
-    failed = check_claims(results)
+    failed = check_claims(
+        results, json.loads((ROOT / "results" / "firmware_check.json").read_text("utf-8"))
+    )
     if failed:
         raise ClaimError("viva notes no longer match the results:\n- " + "\n- ".join(failed))
-    text = render_plain(template.read_text(encoding="utf-8"), numbers(results, performance, tuning))
+    firmware_path = ROOT / "results" / "firmware_check.json"
+    firmware = json.loads(firmware_path.read_text(encoding="utf-8"))
+    text = render_plain(
+        template.read_text(encoding="utf-8"), numbers(results, performance, tuning, firmware)
+    )
     output.write_text(text, encoding="utf-8")
     return output
 
