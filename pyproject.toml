@@ -71,5 +71,5 @@ files = ["src", "scripts", "tests"]
 explicit_package_bases = true
 
 [[tool.mypy.overrides]]
-module = ["scipy.*", "soundfile", "sounddevice", "pesq", "pystoi", "noisereduce"]
+module = ["scipy.*", "serial", "serial.*", "soundfile", "sounddevice", "pesq", "pystoi", "noisereduce"]
 ignore_missing_imports = true

@@ -19,10 +19,22 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     depth: options.depth || 4,
     handshakeMs: options.handshakeMs || 3000,
     timeoutMs: options.timeoutMs || 500,
+    openAttempts: options.openAttempts,
+    openDelayMs: options.openDelayMs === undefined ? 5 : options.openDelayMs,
+    settleMs: options.settleMs === undefined ? 5 : options.settleMs,
   });
   const outputs = new Map();
   engine.onOutput = (samples, meta, token) => outputs.set(token, samples);
-  const info = await engine.open();
+  let info;
+  try {
+    info = await engine.open();
+  } catch (error) {
+    const state = { error: error.message, name: error.name, record: port.record, locked: port.writable.locked };
+    fs.writeFileSync(statsPath, JSON.stringify(state));
+    console.error(error.message);
+    port.child.kill();
+    process.exit(1);
+  }
   for (let i = 0; i < blocks; i++) {
     while (engine.queue.length + engine.inflight.size >= 6) await sleep(0);
     engine.submit(input.slice(i * 256, (i + 1) * 256), i);
@@ -36,7 +48,10 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const out = new Float32Array(blocks * 256);
   for (const [token, samples] of outputs) out.set(samples, token * 256);
   fs.writeFileSync(outputPath, Buffer.from(out.buffer));
-  fs.writeFileSync(statsPath, JSON.stringify({ info, stats, received: outputs.size, blocks }));
+  fs.writeFileSync(
+    statsPath,
+    JSON.stringify({ info, stats, received: outputs.size, blocks, record: port.record, locked: port.writable.locked })
+  );
 })().catch((error) => {
   console.error(error);
   process.exit(1);

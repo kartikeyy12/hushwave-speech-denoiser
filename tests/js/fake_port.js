@@ -7,6 +7,8 @@ function firmwarePort(executable, options = {}) {
   const child = spawn(executable, [], { stdio: ["pipe", "pipe", "inherit"] });
   const readable = Readable.toWeb(child.stdout);
   let opened = false;
+  const record = { openCalls: 0, openOptions: [], signals: [], closeCalls: 0, closed: false };
+  let failuresLeft = options.openFailures || 0;
   const dropWrites = new Set(options.dropWrites || []);
   const corruptWrites = new Set(options.corruptWrites || []);
   let index = 0;
@@ -26,12 +28,28 @@ function firmwarePort(executable, options = {}) {
   });
   return {
     child,
+    record,
     readable,
     writable,
-    async open() {
+    async open(openOptions) {
+      record.openCalls++;
+      record.openOptions.push(openOptions);
+      if (failuresLeft > 0) {
+        failuresLeft--;
+        const error = new Error("Failed to execute 'open' on 'SerialPort': Failed to open serial port.");
+        error.name = "NetworkError";
+        throw error;
+      }
       opened = true;
     },
+    async setSignals(signals) {
+      record.signals.push(signals);
+    },
+    // Like the browser: a port cannot be closed while one of its streams is locked.
     async close() {
+      record.closeCalls++;
+      if (readable.locked || writable.locked) throw new TypeError("The port has a locked stream.");
+      record.closed = true;
       if (opened) child.kill();
     },
   };

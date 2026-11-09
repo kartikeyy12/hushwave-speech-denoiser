@@ -365,6 +365,8 @@ const Live = (() => {
   }
 
   function describe(error) {
+    const serial = HushwaveEngines.explainSerialError(error);
+    if (serial) return serial;
     if (error && error.name === "NotAllowedError") {
       return "Access was denied. Allow the microphone in the address bar, then start again.";
     }
@@ -438,6 +440,7 @@ const Live = (() => {
       $("#live-status").textContent = "Running";
       paint();
     } catch (error) {
+      console.error(error);
       showError("#live-error", describe(error));
       await teardown();
       $("#live-status").textContent = "Stopped";

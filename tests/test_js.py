@@ -56,6 +56,57 @@ def test_protocol_codec() -> None:
     assert "protocol: ok" in run.stdout
 
 
+def test_error_wording() -> None:
+    run = _node(JS / "errors_test.js")
+    assert run.returncode == 0, run.stderr
+    assert "errors: ok" in run.stdout
+
+
+def test_open_retries_and_uses_the_run_state(
+    host: Path, tmp_path: Path, rng: np.random.Generator
+) -> None:
+    x = 0.05 * rng.standard_normal(256 * 20)
+    out, report = _stream(host, x, tmp_path, {"openFailures": 2})
+    record = report["record"]
+    assert record["openCalls"] == 3
+    assert record["openOptions"][-1] == {
+        "baudRate": 921600,
+        "bufferSize": 65536,
+        "flowControl": "none",
+    }
+    assert record["signals"] == [{"dataTerminalReady": False, "requestToSend": False}]
+    assert report["received"] == 20
+    assert np.max(np.abs(out - _reference(x))) < 4e-5
+
+
+def test_a_port_that_never_opens_gives_the_browser_error(tmp_path: Path) -> None:
+    source, stats = tmp_path / "in.f32", tmp_path / "stats.json"
+    np.zeros(256, dtype="<f4").tofile(source)
+    options = json.dumps({"openFailures": 99, "openAttempts": 3})
+    run = _node(
+        JS / "engine_roundtrip.js", "/bin/true", source, tmp_path / "out.f32", stats, options
+    )
+    assert run.returncode != 0
+    report = json.loads(stats.read_text(encoding="utf-8"))
+    assert "Failed to open serial port" in report["error"]
+    assert report["record"]["openCalls"] == 3
+    assert report["record"]["signals"] == []
+
+
+def test_a_failed_handshake_releases_the_port(tmp_path: Path) -> None:
+    silent = tmp_path / "silent.sh"
+    silent.write_text("#!/bin/sh\ncat > /dev/null\n")
+    silent.chmod(0o755)
+    source, stats = tmp_path / "in.f32", tmp_path / "stats.json"
+    np.zeros(256, dtype="<f4").tofile(source)
+    options = json.dumps({"handshakeMs": 600})
+    run = _node(JS / "engine_roundtrip.js", silent, source, tmp_path / "out.f32", stats, options)
+    assert run.returncode != 0
+    report = json.loads(stats.read_text(encoding="utf-8"))
+    assert report["record"]["closed"] is True
+    assert report["locked"] is False
+
+
 def test_esp32_engine_matches_the_python_reference(
     host: Path, tmp_path: Path, rng: np.random.Generator
 ) -> None:

@@ -38,7 +38,9 @@ Replay needs no microphone and no board.
 | Page does not open | `python scripts/demo.py live --host 0.0.0.0`, open the WSL address |
 | Port 8765 in use | `python scripts/demo.py live --port 8800` |
 | ESP32 button greyed out | The browser has no Web Serial. Use Chrome or Edge on a computer |
-| "The board did not answer" | Close the Serial Monitor and any other program that holds the port, press RST on the board, press Start again. Check that the sketch is flashed |
+| "The port could not be opened" | Close the Arduino IDE, its Serial Monitor and other browser tabs that used the board. Unplug and replug the board, press Start, and choose the port again. The page retries the open a few times by itself. If it still fails, run `scripts/mcu_probe.py` (see `docs/FIRMWARE.md`) |
+| COM number changed | The native USB port is re-created when the board resets. Press Start again and choose the port that is listed now |
+| "The board did not answer" | Close the Serial Monitor and any other program that holds the port, press RST on the board, press Start again. Check that the sketch is flashed and that USB CDC On Boot was Enabled for the upload (`docs/FIRMWARE.md`) |
 | No COM port in the list | Try another cable (some cables carry power only) and the other USB port of the board. Install the driver of the USB-UART chip (CP210x or CH340) |
 | Microphone denied | Click the lock icon in the address bar, allow the microphone, press Start again |
 | Browser runs audio at another rate | Use Chrome or Edge |

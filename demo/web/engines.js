@@ -64,6 +64,9 @@
       this.timeoutMs = options.timeoutMs || 500;
       this.baudRate = options.baudRate || 921600;
       this.handshakeMs = options.handshakeMs || 8000;
+      this.openAttempts = options.openAttempts || 4;
+      this.openDelayMs = options.openDelayMs === undefined ? 400 : options.openDelayMs;
+      this.settleMs = options.settleMs === undefined ? 300 : options.settleMs;
       this.port = options.port || null;
       this.parser = new P.FrameParser();
       this.queue = [];
@@ -83,11 +86,16 @@
         }
         this.port = await navigator.serial.requestPort();
       }
-      await this.port.open({ baudRate: this.baudRate, bufferSize: 1 << 16 });
-      this.writer = this.port.writable.getWriter();
-      this.closed = false;
-      this.readDone = this._readLoop();
       try {
+        await this._openPort();
+        await this._runState();
+        if (!this.port.writable || !this.port.readable) throw new Error("The port opened but has no data streams.");
+        this.writer = this.port.writable.getWriter();
+        this.closed = false;
+        this.readDone = this._readLoop();
+        if (typeof this.port.addEventListener === "function") {
+          this.port.addEventListener("disconnect", () => this._fail(new Error("The board was disconnected.")));
+        }
         await this._handshake();
         await this._write(P.encodeFrame(P.TYPE.RESET, this._nextSeq()));
       } catch (error) {
@@ -96,6 +104,36 @@
       }
       this.timer = setInterval(() => this._expire(), 100);
       return { fs: this.hello.fs, block: this.hello.block, delay: this.hello.delay, name: this.hello.name };
+    }
+
+    // The board may restart and show up again under another port while the browser opens it, so a
+    // failed open is tried a few times with growing pauses.
+    async _openPort() {
+      let last = null;
+      for (let attempt = 0; attempt < this.openAttempts; attempt++) {
+        try {
+          await this.port.open({ baudRate: this.baudRate, bufferSize: 1 << 16, flowControl: "none" });
+          return;
+        } catch (error) {
+          last = error;
+          if (error && (error.name === "SecurityError" || error.name === "NotAllowedError")) break;
+          if (error && error.name === "InvalidStateError") await this._release();
+          if (attempt + 1 < this.openAttempts) await sleep(this.openDelayMs * (attempt + 1));
+        }
+      }
+      throw last;
+    }
+
+    // Normal run state: DTR and RTS low, then a short wait in case the board restarted on open.
+    async _runState() {
+      if (typeof this.port.setSignals === "function") {
+        try {
+          await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
+        } catch (_) {
+          /* not every driver supports it */
+        }
+      }
+      await sleep(this.settleMs);
     }
 
     async _handshake() {
@@ -203,11 +241,15 @@
     }
 
     async close() {
-      if (this.closed && !this.writer) return;
       this.closed = true;
       clearInterval(this.timer);
       this.queue = [];
       this.inflight.clear();
+      await this._release();
+    }
+
+    // Give back the streams and close the port, so that a new attempt works without a reload.
+    async _release() {
       try {
         if (this.reader) await this.reader.cancel();
       } catch (_) {
@@ -218,16 +260,25 @@
       } catch (_) {
         /* ignore */
       }
-      try {
-        if (this.writer) await this.writer.close();
-      } catch (_) {
-        /* ignore */
+      this.reader = null;
+      this.readDone = null;
+      if (this.writer) {
+        try {
+          await this.writer.close();
+        } catch (_) {
+          /* ignore */
+        }
+        try {
+          this.writer.releaseLock();
+        } catch (_) {
+          /* already released */
+        }
+        this.writer = null;
       }
-      this.writer = null;
       try {
-        await this.port.close();
+        if (this.port) await this.port.close();
       } catch (_) {
-        /* ignore */
+        /* the port may already be closed */
       }
     }
   }
@@ -310,7 +361,25 @@
     }
   }
 
-  const api = { Stats, McuEngine, PythonEngine };
+  // Plain wording for the errors that Web Serial raises. Returns null for any other error.
+  function explainSerialError(error) {
+    const name = error && error.name ? error.name : "";
+    const text = error && error.message ? error.message : "";
+    if (/failed to open serial port/i.test(text) || name === "NetworkError") {
+      return "The port could not be opened. Close the Arduino Serial Monitor and other tabs that use the board, unplug and replug the board, then press Start and choose the port again.";
+    }
+    if (/no port selected/i.test(text)) return "No port was selected. Press Start and choose the board.";
+    if (name === "InvalidStateError" && /open/i.test(text)) {
+      return "The port is already open. Reload this page and press Start again.";
+    }
+    if (name === "SecurityError") return "The browser needs a click to show the port list. Press Start again.";
+    if (/device has been lost|disconnected/i.test(text)) {
+      return "The board was disconnected. Check the cable and press Start again.";
+    }
+    return null;
+  }
+
+  const api = { Stats, McuEngine, PythonEngine, explainSerialError };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.HushwaveEngines = api;
 })(typeof self !== "undefined" ? self : this);

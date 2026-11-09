@@ -4,7 +4,8 @@
 // board. The board runs the denoiser and sends every block back, and the computer plays it.
 // All signal processing happens here, in hushwave_core.cpp.
 //
-// Board: any ESP32 development board (Arduino IDE: "ESP32 Dev Module").
+// Board: ESP32-S3 (Arduino IDE: "ESP32S3 Dev Module"). Cable in the native USB port: set
+// USB CDC On Boot to Enabled and USB Mode to Hardware CDC and JTAG, so that Serial is the USB port.
 // Close the Serial Monitor before using the browser: only one program can hold the port.
 
 #include "hushwave_core.h"
