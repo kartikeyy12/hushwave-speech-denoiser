@@ -16,7 +16,7 @@ assert.match(opened, /Close the Arduino Serial Monitor/);
 assert.match(opened, /unplug and replug/);
 assert.match(explainSerialError(failure("NotFoundError", "Failed to execute 'requestPort' on 'Serial': No port selected by the user.")), /No port was selected/);
 assert.match(explainSerialError(failure("InvalidStateError", "The port is already open.")), /already open/);
-assert.match(explainSerialError(failure("SecurityError", "Must be handling a user gesture.")), /Press Start again/);
+assert.match(explainSerialError(failure("SecurityError", "Must be handling a user gesture.")), /needs a click/);
 assert.match(explainSerialError(failure("NetworkError", "The device has been lost.")), /port could not be opened|disconnected/);
 assert.equal(explainSerialError(failure("NotFoundError", "Requested device not found")), null);
 assert.equal(explainSerialError(new Error("something else")), null);

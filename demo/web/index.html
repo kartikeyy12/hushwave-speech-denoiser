@@ -8,92 +8,297 @@
 </head>
 <body>
 <header class="bar">
-  <div class="brand">
-    <span class="mark">HushWave</span>
-    <span class="sub">Single-channel speech noise reduction</span>
+  <div class="bar-inner">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8"/><path d="M6 16h2.4M10.6 11v10M15.2 7v18M19.8 10v12M24.4 13.5v5M27 16h-.6"/></svg>
+      <div class="brand-text">
+        <span class="mark">HushWave</span>
+        <span class="sub">Single-channel speech noise reduction</span>
+      </div>
+    </div>
+    <nav role="tablist" aria-label="Mode">
+      <button type="button" role="tab" id="tab-replay" data-tab="replay" aria-controls="panel-replay" aria-selected="true">Replay</button>
+      <button type="button" role="tab" id="tab-live" data-tab="live" aria-controls="panel-live" aria-selected="false">Live</button>
+      <button type="button" role="tab" id="tab-record" data-tab="record" aria-controls="panel-record" aria-selected="false">Record</button>
+    </nav>
   </div>
-  <nav role="tablist" aria-label="Mode">
-    <button type="button" role="tab" id="tab-replay" data-tab="replay" aria-controls="panel-replay" aria-selected="true">Replay</button>
-    <button type="button" role="tab" id="tab-live" data-tab="live" aria-controls="panel-live" aria-selected="false">Live</button>
-  </nav>
 </header>
 
 <main>
   <section id="panel-replay" role="tabpanel" aria-labelledby="tab-replay">
-    <div class="row">
-      <div id="clips" class="segmented" role="group" aria-label="Recording"></div>
-      <p id="clip-note" class="muted"></p>
-    </div>
-
-    <figure class="plot">
-      <div class="yaxis" aria-hidden="true"><span>8 kHz</span><span>4 kHz</span><span>0</span></div>
-      <div id="spec" class="canvas" tabindex="0" role="slider" aria-label="Playback position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-        <img id="spec-img" alt="Spectrogram of the selected version" draggable="false">
-        <div id="playhead"></div>
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>Example recordings</h2>
+          <p id="clip-note" class="muted"></p>
+        </div>
+        <div id="clips" class="segmented" role="group" aria-label="Recording"></div>
       </div>
-      <div class="xaxis" aria-hidden="true"><span>0 s</span><span id="x-end"></span></div>
-    </figure>
 
-    <div class="controls">
-      <button type="button" id="play" class="primary">Play</button>
-      <span id="time" class="mono">0:00 / 0:00</span>
-      <div id="variants" class="segmented" role="group" aria-label="Version"></div>
+      <figure class="plot">
+        <div class="yaxis" aria-hidden="true"><span>8 kHz</span><span>4 kHz</span><span>0</span></div>
+        <div id="spec" class="canvas" tabindex="0" role="slider" aria-label="Playback position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <img id="spec-img" alt="Spectrogram of the selected version" draggable="false">
+          <div id="playhead"></div>
+        </div>
+        <div class="xaxis" aria-hidden="true"><span>0 s</span><span id="x-end"></span></div>
+      </figure>
+
+      <div class="controls">
+        <button type="button" id="play" class="btn btn-primary" data-state="paused">
+          <svg class="ico ico-play" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4l10 6-10 6z"/></svg>
+          <svg class="ico ico-pause" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 4h3.5v12H5zM11.5 4H15v12h-3.5z"/></svg>
+          <span id="play-label">Play</span>
+        </button>
+        <span id="time" class="mono">0:00 / 0:00</span>
+        <div id="variants" class="segmented" role="group" aria-label="Version"></div>
+      </div>
+      <p class="hint">Space plays or pauses. Keys 1 to 3 switch version. Arrow keys seek. All versions share one level and one colour scale.</p>
     </div>
-    <p class="hint">Space plays or pauses. Keys 1 to 3 switch version. Arrow keys seek. All versions share one level and one colour scale.</p>
 
-    <table class="measures" id="measures" hidden>
-      <caption>Whole recording, no clean reference available</caption>
-      <thead>
-        <tr><th scope="col">Version</th><th scope="col" class="num">Noise reduction in pauses</th><th scope="col" class="num">Speech level change</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <p id="replay-error" class="error" role="alert" hidden></p>
+    <div class="card">
+      <table class="measures" id="measures" hidden>
+        <caption>Whole recording, no clean reference available</caption>
+        <thead>
+          <tr><th scope="col">Version</th><th scope="col" class="num">Noise reduction in pauses</th><th scope="col" class="num">Speech level change</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p id="replay-error" class="error" role="alert" hidden></p>
+    </div>
   </section>
 
   <section id="panel-live" role="tabpanel" aria-labelledby="tab-live" hidden>
-    <div class="row">
-      <div id="engines" class="segmented" role="group" aria-label="Processing engine">
-        <button type="button" data-kind="mcu" aria-pressed="true">ESP32</button>
-        <button type="button" data-kind="python" aria-pressed="false">This computer</button>
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>Live processing</h2>
+          <p class="muted">The microphone is processed block by block while you speak. Use headphones.</p>
+        </div>
+        <p id="live-status" class="pill" role="status">Stopped</p>
       </div>
-      <button type="button" id="live-toggle" class="primary">Start</button>
-      <div class="switch-row">
-        <button type="button" id="enhance" class="switch" role="switch" aria-checked="true" aria-labelledby="enhance-label"></button>
-        <span id="enhance-label">Enhancement</span>
+      <div class="row">
+        <div id="engines" class="segmented" role="group" aria-label="Processing engine">
+          <button type="button" data-kind="mcu" aria-pressed="true">ESP32</button>
+          <button type="button" data-kind="python" aria-pressed="false">This computer</button>
+        </div>
+        <button type="button" id="live-toggle" class="btn btn-primary">Start</button>
+        <div class="switch-row">
+          <button type="button" id="enhance" class="switch" role="switch" aria-checked="true" aria-labelledby="enhance-label"></button>
+          <span id="enhance-label">Enhancement</span>
+        </div>
       </div>
-      <p id="live-status" class="muted" role="status">Stopped</p>
-    </div>
-    <p id="engine-hint" class="hint" hidden>This browser cannot talk to a serial device. Use Chrome or Edge to run the denoiser on the ESP32.</p>
+      <p id="engine-hint" class="hint" hidden>This browser cannot talk to a serial device. Use Chrome or Edge to run the denoiser on the ESP32.</p>
 
-    <div class="meters">
-      <div class="meter"><span class="label">Input</span><div class="track"><div id="meter-in" class="fill"></div></div><span id="db-in" class="mono">-90 dBFS</span></div>
-      <div class="meter"><span class="label">Output</span><div class="track"><div id="meter-out" class="fill"></div></div><span id="db-out" class="mono">-90 dBFS</span></div>
+      <div class="meters">
+        <div class="meter"><span class="label">Input</span><div class="track"><div id="meter-in" class="fill"></div></div><span id="db-in" class="mono">-90 dBFS</span></div>
+        <div class="meter"><span class="label">Output</span><div class="track"><div id="meter-out" class="fill"></div></div><span id="db-out" class="mono">-90 dBFS</span></div>
+      </div>
+
+      <div class="row actions">
+        <button type="button" id="record" class="btn btn-secondary" hidden>Record</button>
+        <button type="button" id="save-stats" class="btn btn-secondary" hidden>Save measurements</button>
+      </div>
+      <p id="live-error" class="error" role="alert" hidden></p>
     </div>
 
-    <div class="row actions">
-      <button type="button" id="record" class="secondary" hidden>Record</button>
-      <button type="button" id="save-stats" class="secondary" hidden>Save measurements</button>
-    </div>
-
-    <div id="takes" hidden>
+    <div id="takes" class="card" hidden>
       <h2>Recording</h2>
       <p class="hint">Both files start at the same instant. The denoised file is shifted back by the algorithmic delay.</p>
       <div id="takes-list"></div>
     </div>
 
-    <dl class="stats">
-      <div class="wide"><dt>Engine</dt><dd id="s-engine">Not started</dd></div>
-      <div><dt>Algorithmic delay</dt><dd id="s-algo">n/a</dd></div>
-      <div><dt>Block</dt><dd id="s-block">n/a</dd></div>
-      <div><dt>Processing per block</dt><dd id="s-compute">n/a</dd></div>
-      <div><dt>Round trip to engine</dt><dd id="s-rtt">n/a</dd></div>
-      <div><dt>Output buffer</dt><dd id="s-buffer">n/a</dd></div>
-      <div><dt>Dropouts</dt><dd id="s-drop">n/a</dd></div>
-    </dl>
-    <p class="total"><span>Estimated delay, microphone to headphones</span><strong id="s-total" class="mono">n/a</strong></p>
-    <p class="hint">The estimate adds block, algorithmic delay, round trip and buffer. It leaves out the latency of the audio device itself. Use headphones, because speakers feed back into the microphone. The browser's own noise suppression, echo cancellation and gain control are switched off, so what you hear is the HushWave engine only. With the ESP32 selected, every sample is processed by the firmware on the board.</p>
-    <p id="live-error" class="error" role="alert" hidden></p>
+    <div class="card">
+      <h2>Engine measurements</h2>
+      <dl class="stats">
+        <div class="wide"><dt>Engine</dt><dd id="s-engine">Not started</dd></div>
+        <div><dt>Algorithmic delay</dt><dd id="s-algo">n/a</dd></div>
+        <div><dt>Block</dt><dd id="s-block">n/a</dd></div>
+        <div><dt>Processing per block</dt><dd id="s-compute">n/a</dd></div>
+        <div><dt>Round trip to engine</dt><dd id="s-rtt">n/a</dd></div>
+        <div><dt>Output buffer</dt><dd id="s-buffer">n/a</dd></div>
+        <div><dt>Dropouts</dt><dd id="s-drop">n/a</dd></div>
+      </dl>
+      <p class="total"><span>Estimated delay, microphone to headphones</span><strong id="s-total" class="mono">n/a</strong></p>
+      <p class="hint">The estimate adds block, algorithmic delay, round trip and buffer. It leaves out the latency of the audio device itself. The browser's own noise suppression, echo cancellation and gain control are switched off, so what you hear is the HushWave engine only. With the ESP32 selected, every sample is processed by the firmware on the board.</p>
+    </div>
+  </section>
+
+  <section id="panel-record" role="tabpanel" aria-labelledby="tab-record" hidden>
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2><span class="step">1</span>Record</h2>
+          <p class="muted">Start with a second of silence, then speak. The recording can be up to two minutes.</p>
+        </div>
+        <p id="rec-status" class="pill" role="status">Ready</p>
+      </div>
+      <div class="row">
+        <button type="button" id="rec-toggle" class="btn btn-primary" data-state="idle">
+          <svg class="ico ico-mic" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM5 9.5a5 5 0 0 0 4.25 4.94V17h1.5v-2.56A5 5 0 0 0 15 9.5h-1.5a3.5 3.5 0 0 1-7 0z"/></svg>
+          <svg class="ico ico-stop" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5h10v10H5z"/></svg>
+          <span id="rec-toggle-label">Record</span>
+        </button>
+        <span id="rec-timer" class="mono timer">0:00</span>
+        <div class="meter inline"><div class="track"><div id="rec-meter" class="fill"></div></div><span id="rec-db" class="mono">-90 dBFS</span></div>
+      </div>
+      <div id="rec-live-box" class="chart live" data-h="84" hidden>
+        <canvas id="rec-live" aria-label="Level of the recording so far"></canvas>
+      </div>
+      <p id="rec-error" class="error" role="alert" hidden></p>
+    </div>
+
+    <div id="rec-playback" class="card" hidden>
+      <div class="card-head">
+        <div>
+          <h2><span class="step">2</span>Listen</h2>
+          <p class="muted">Play the recording. After denoising, switch between the original and the denoised version at any point.</p>
+        </div>
+        <div id="rec-variants" class="segmented" role="group" aria-label="Version">
+          <button type="button" data-key="original" aria-pressed="true">Original</button>
+          <button type="button" data-key="denoised" aria-pressed="false" disabled>Denoised</button>
+        </div>
+      </div>
+      <div class="controls">
+        <button type="button" id="rec-play" class="btn btn-primary" data-state="paused">
+          <svg class="ico ico-play" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4l10 6-10 6z"/></svg>
+          <svg class="ico ico-pause" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 4h3.5v12H5zM11.5 4H15v12h-3.5z"/></svg>
+          <span id="rec-play-label">Play</span>
+        </button>
+        <span id="rec-time" class="mono">0:00 / 0:00</span>
+        <div class="legend" id="rec-legend-wave">
+          <span><i class="swatch original"></i>Original</span>
+          <span id="rec-legend-denoised" hidden><i class="swatch denoised"></i>Denoised</span>
+        </div>
+      </div>
+      <div id="chart-wave" class="chart seekable" data-h="200">
+        <canvas aria-label="Waveform of the recording"></canvas>
+        <div class="playhead"></div>
+      </div>
+      <p class="hint">Click or drag on any time chart to move the playhead. Space plays or pauses, keys 1 and 2 switch version, arrow keys seek.</p>
+      <div class="row actions">
+        <button type="button" id="dl-original" class="btn btn-secondary">
+          <svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M9.25 3h1.5v7.4l2.6-2.6 1.05 1.05L10 13.5 5.6 8.85 6.65 7.8l2.6 2.6zM4 15h12v1.5H4z"/></svg>
+          Original WAV
+        </button>
+        <button type="button" id="dl-denoised" class="btn btn-secondary" hidden>
+          <svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M9.25 3h1.5v7.4l2.6-2.6 1.05 1.05L10 13.5 5.6 8.85 6.65 7.8l2.6 2.6zM4 15h12v1.5H4z"/></svg>
+          Denoised WAV
+        </button>
+        <button type="button" id="dl-json" class="btn btn-secondary" hidden>
+          <svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M9.25 3h1.5v7.4l2.6-2.6 1.05 1.05L10 13.5 5.6 8.85 6.65 7.8l2.6 2.6zM4 15h12v1.5H4z"/></svg>
+          Measurements
+        </button>
+        <button type="button" id="rec-new" class="btn btn-quiet">New recording</button>
+      </div>
+    </div>
+
+    <div id="rec-denoise" class="card" hidden>
+      <div class="card-head">
+        <div>
+          <h2><span class="step">3</span>Denoise the whole recording</h2>
+          <p id="rec-engine-note" class="muted"></p>
+        </div>
+        <div id="rec-engines" class="segmented" role="group" aria-label="Processing engine">
+          <button type="button" data-kind="mcu" aria-pressed="true">ESP32</button>
+          <button type="button" data-kind="python" aria-pressed="false">This computer</button>
+        </div>
+      </div>
+      <div class="row">
+        <button type="button" id="rec-run" class="btn btn-primary">
+          <span id="rec-run-label">Denoise with ESP32</span>
+        </button>
+        <button type="button" id="rec-cancel" class="btn btn-secondary" hidden>Cancel</button>
+        <p id="rec-run-status" class="muted" role="status"></p>
+      </div>
+      <div id="rec-progress" class="progress" hidden>
+        <div class="track"><div id="rec-progress-bar" class="fill"></div></div>
+        <span id="rec-progress-text" class="mono"></span>
+      </div>
+      <p id="rec-warn" class="warn" role="alert" hidden></p>
+      <p id="rec-engine-hint" class="hint" hidden>This browser cannot talk to a serial device. Use Chrome or Edge to run the denoiser on the ESP32.</p>
+    </div>
+
+    <div id="rec-results" hidden>
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2>Measurements</h2>
+            <p id="rec-summary" class="muted"></p>
+          </div>
+        </div>
+        <div class="tiles">
+          <div class="tile"><span class="tile-label">Noise reduction in pauses</span><strong id="m-nr">n/a</strong><span id="m-nr-sub" class="tile-sub"></span></div>
+          <div class="tile"><span class="tile-label">Speech level change</span><strong id="m-speech">n/a</strong><span id="m-speech-sub" class="tile-sub"></span></div>
+          <div class="tile"><span class="tile-label">Noise level in pauses</span><strong id="m-resid">n/a</strong><span id="m-resid-sub" class="tile-sub"></span></div>
+          <div class="tile"><span class="tile-label">Processing per block</span><strong id="m-compute">n/a</strong><span id="m-compute-sub" class="tile-sub"></span></div>
+          <div class="tile"><span class="tile-label">Round trip to engine</span><strong id="m-rtt">n/a</strong><span id="m-rtt-sub" class="tile-sub"></span></div>
+          <div class="tile"><span class="tile-label">Blocks processed</span><strong id="m-blocks">n/a</strong><span id="m-blocks-sub" class="tile-sub"></span></div>
+        </div>
+        <p class="hint">Pauses and speech are found from the recording itself. The floor is 6 dB above the quietest tenth of the 16 ms blocks. A pause block lies at most 1 dB above the floor, a speech block more than 10 dB above it. Noise reduction is the energy of the pauses before divided by after. Speech level change compares the energy of the speech blocks, which still include the noise under the speech, so a small negative value is expected.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2>Spectrograms</h2>
+            <p class="muted">Frequency content over time, 0 to 8 kHz. Both use the same colour scale.</p>
+          </div>
+        </div>
+        <h3>Original</h3>
+        <div id="chart-spec-in" class="chart seekable" data-h="220">
+          <canvas aria-label="Spectrogram of the original recording"></canvas>
+          <div class="playhead"></div>
+        </div>
+        <h3>Denoised</h3>
+        <div id="chart-spec-out" class="chart seekable" data-h="220">
+          <canvas aria-label="Spectrogram of the denoised recording"></canvas>
+          <div class="playhead"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2>Energy over time</h2>
+            <p class="muted">Energy of each 16 ms block. Shaded stretches are pauses; the dashed line is the pause limit.</p>
+          </div>
+          <div class="legend"><span><i class="swatch original"></i>Original</span><span><i class="swatch denoised"></i>Denoised</span></div>
+        </div>
+        <div id="chart-levels" class="chart seekable" data-h="220">
+          <canvas aria-label="Block energy of the original and the denoised recording over time"></canvas>
+          <div class="playhead"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Average spectrum</h2>
+              <p class="muted">Solid: whole recording. Dashed: pauses only, which is the noise floor.</p>
+            </div>
+          </div>
+          <div class="legend"><span><i class="swatch original"></i>Original</span><span><i class="swatch denoised"></i>Denoised</span></div>
+          <div id="chart-spectra" class="chart" data-h="260">
+            <canvas aria-label="Average power spectrum before and after denoising"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Processing time</h2>
+              <p class="muted">Per block, against the 16 ms the block lasts. The dashed line is that budget.</p>
+            </div>
+          </div>
+          <div class="legend"><span><i class="swatch denoised"></i>Processing in the engine</span><span><i class="swatch original"></i>Round trip</span></div>
+          <div id="chart-timing" class="chart seekable" data-h="260">
+            <canvas aria-label="Processing time and round trip per block"></canvas>
+            <div class="playhead"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -103,6 +308,9 @@
 </footer>
 <script src="/web/protocol.js"></script>
 <script src="/web/engines.js"></script>
+<script src="/web/analysis.js"></script>
+<script src="/web/charts.js"></script>
+<script src="/web/recorder.js"></script>
 <script src="/web/app.js"></script>
 </body>
 </html>

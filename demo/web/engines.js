@@ -366,15 +366,15 @@
     const name = error && error.name ? error.name : "";
     const text = error && error.message ? error.message : "";
     if (/failed to open serial port/i.test(text) || name === "NetworkError") {
-      return "The port could not be opened. Close the Arduino Serial Monitor and other tabs that use the board, unplug and replug the board, then press Start and choose the port again.";
+      return "The port could not be opened. Close the Arduino Serial Monitor and other tabs that use the board, unplug and replug the board, then try again and choose the port.";
     }
-    if (/no port selected/i.test(text)) return "No port was selected. Press Start and choose the board.";
+    if (/no port selected/i.test(text)) return "No port was selected. Try again and choose the board in the list.";
     if (name === "InvalidStateError" && /open/i.test(text)) {
-      return "The port is already open. Reload this page and press Start again.";
+      return "The port is already open. Reload this page and try again.";
     }
-    if (name === "SecurityError") return "The browser needs a click to show the port list. Press Start again.";
+    if (name === "SecurityError") return "The browser needs a click to show the port list. Try again.";
     if (/device has been lost|disconnected/i.test(text)) {
-      return "The board was disconnected. Check the cable and press Start again.";
+      return "The board was disconnected. Check the cable and try again.";
     }
     return null;
   }

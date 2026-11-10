@@ -13,6 +13,11 @@ function signed(value, digits = 1) {
   return `${value < 0 ? "-" : "+"}${text}`;
 }
 
+function setPlayState(playing) {
+  $("#play").dataset.state = playing ? "playing" : "paused";
+  $("#play-label").textContent = playing ? "Pause" : "Play";
+}
+
 function showError(id, message) {
   const el = $(id);
   el.textContent = message;
@@ -99,12 +104,12 @@ const Replay = (() => {
       state.playing = false;
       state.offset = 0;
       stopSources();
-      $("#play").textContent = "Play";
+      setPlayState(false);
       render();
     };
     state.startedAt = when - at;
     state.playing = true;
-    $("#play").textContent = "Pause";
+    setPlayState(true);
     cancelAnimationFrame(state.frame);
     render();
   }
@@ -119,7 +124,7 @@ const Replay = (() => {
     state.offset = position();
     state.playing = false;
     stopSources();
-    $("#play").textContent = "Play";
+    setPlayState(false);
     render();
   }
 
@@ -355,8 +360,9 @@ const Live = (() => {
     state.compute = state.compute === 0 ? meta.computeMs : 0.95 * state.compute + 0.05 * meta.computeMs;
     state.computeMax = Math.max(state.computeMax, meta.computeMs);
     if (state.recording) {
+      // `wet` is handed to the playback worklet below and its buffer is transferred, so keep a copy.
       state.recIn.push(dry);
-      state.recOut.push(wet);
+      state.recOut.push(wet.slice());
     }
     const mixed = blend(wet, dry);
     state.levelOut = levelDb(mixed);
@@ -501,27 +507,7 @@ const Live = (() => {
     return out;
   }
 
-  function wavBlob(samples, fs) {
-    const buffer = new ArrayBuffer(44 + 2 * samples.length);
-    const view = new DataView(buffer);
-    const text = (offset, value) => [...value].forEach((c, i) => view.setUint8(offset + i, c.charCodeAt(0)));
-    text(0, "RIFF");
-    view.setUint32(4, 36 + 2 * samples.length, true);
-    text(8, "WAVEfmt ");
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, 1, true);
-    view.setUint32(24, fs, true);
-    view.setUint32(28, 2 * fs, true);
-    view.setUint16(32, 2, true);
-    view.setUint16(34, 16, true);
-    text(36, "data");
-    view.setUint32(40, 2 * samples.length, true);
-    for (let i = 0; i < samples.length; i++) {
-      view.setInt16(44 + 2 * i, Math.max(-32768, Math.min(32767, Math.round(samples[i] * 32768))), true);
-    }
-    return new Blob([buffer], { type: "audio/wav" });
-  }
+  const wavBlob = HushwaveAnalysis.wavBlob;
 
   function addTake(title, blob, filename) {
     const url = URL.createObjectURL(blob);
@@ -607,15 +593,20 @@ function describeSetup(info) {
   return `${rule}, ${tracker} noise tracking, ${info.frame_ms} ms frames, ${info.fs / 1000} kHz`;
 }
 
+const TABS = ["replay", "live", "record"];
+
 async function setTab(name) {
-  const tab = name === "live" ? "live" : "replay";
+  const tab = TABS.includes(name) ? name : "replay";
   for (const button of document.querySelectorAll("nav button")) {
     button.setAttribute("aria-selected", String(button.dataset.tab === tab));
   }
   $("#panel-replay").hidden = tab !== "replay";
   $("#panel-live").hidden = tab !== "live";
-  if (tab === "live") Replay.pause();
-  else if (Live.isRunning()) await Live.stop();
+  $("#panel-record").hidden = tab !== "record";
+  if (tab !== "replay") Replay.pause();
+  if (tab !== "record") Recorder.pause();
+  if (tab !== "live" && Live.isRunning()) await Live.stop();
+  if (tab === "record") Recorder.activate();
 }
 
 async function main() {
@@ -629,8 +620,10 @@ async function main() {
     if (event.target.closest("input, select, textarea")) return;
     if (event.key === " " && event.target.closest("button")) return;
     if (!$("#panel-replay").hidden) Replay.key(event);
+    else if (!$("#panel-record").hidden) Recorder.key(event);
   });
   Live.init();
+  Recorder.init();
   try {
     const info = await getJson("/api/info");
     $("#setup").textContent = describeSetup(info);
